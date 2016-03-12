@@ -1,0 +1,48 @@
+PHONY := __build
+__build:
+
+obj-y :=
+subdir-y :=
+
+-include Makefile
+
+# obj-y := a.o b.o c/ d/
+# $(filter %/, $(obj-y))   : c/ d/
+# __subdir-y  : c d
+# subdir-y    : c d
+__subdir-y	:= $(patsubst %/,%,$(filter %/, $(obj-y)))
+subdir-y	+= $(__subdir-y)
+
+# c/built-in.o d/built-in.o
+subdir_objs := $(foreach f,$(subdir-y),$(f)/built-in.o)
+
+# a.o b.o
+cur_objs := $(filter-out %/, $(obj-y))
+
+PHONY += $(subdir-y)
+
+__build : $(subdir-y) built-in.o
+
+$(subdir-y):
+	make -C $@ -f $(TOPDIR)/Makefile.build
+sinclude $(cur_objs:.o=.d)
+
+built-in.o : $(cur_objs) $(subdir_objs)
+	$(LD) -r -o $@ $^
+
+%.o : %.c
+	$(CC) $(CFLAGS)  -c -o $@ $<
+%.o : %.s
+	$(CC) $(CFLAGS)  -c -o $@ $<	
+	
+%.d:%.c
+	@$(CC) $(CFLAGS) -MM $< > $@.$$$$;\
+	sed 's,\($*\)\.o[:]*,\1.o $@ :,g' < $@.$$$$ > $@;\
+	rm -f $@.$$$$
+	
+%.d:%.s
+	@$(CC) $(CFLAGS) -MM $< > $@.$$$$;\
+	sed 's,\($*\)\.o[:]*,\1.o $@ :,g' < $@.$$$$ > $@;\
+	rm -f $@.$$$$
+			
+.PHONY : $(PHONY)

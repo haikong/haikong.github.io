@@ -1,0 +1,18 @@
+swi_ta_elf  :
+section             size         addr
+.text              0x668   0x30000000
+.data               0x28   0x30000668
+.ARM.attributes     0x26          0x0
+.debug_line        0x2c6          0x0
+.debug_info        0x815          0x0
+.debug_abbrev      0x465          0x0
+.debug_aranges     0x100          0x0
+.comment           0x150          0x0
+.debug_pubnames    0x1e0          0x0
+.debug_frame       0x2b0          0x0
+.debug_str         0x2ad          0x0
+.debug_loc         0x339          0x0
+.debug_ranges       0x20          0x0
+Total             0x22dc
+
+

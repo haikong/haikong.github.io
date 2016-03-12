@@ -1,0 +1,15 @@
+objs := head.o init.o nand.o main.o nand_op.o
+
+nand.bin : $(objs)
+	arm-linux-ld -Tnand.lds	-o nand_elf $^
+	arm-linux-objcopy -O binary -S nand_elf $@
+	arm-linux-objdump -D -m arm  nand_elf > nand.dis
+
+%.o:%.c
+	arm-linux-gcc -I../include -Wall -c -O0 -o $@ $<
+
+%.o:%.S
+	arm-linux-gcc -Wall -c -O0 -o $@ $<
+
+clean:
+	rm -f  nand.dis nand.bin nand_elf *.o *.bak

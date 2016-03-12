@@ -1,0 +1,10 @@
+swi_ta_elf  :
+section            size         addr
+.init             0x774          0x0
+.text             0x490   0x30000000
+.data.rel.local    0x28   0x30000490
+.comment          0x150          0x0
+.ARM.attributes    0x26          0x0
+Total             0xda2
+
+

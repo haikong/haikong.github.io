@@ -1,0 +1,15 @@
+dma_elf  :
+section             size         addr
+.init              0x72c          0x0
+.text             0x2ac4   0x30000000
+.rodata            0x150   0x30002ac4
+.rodata.str1.4      0x3c   0x30002c14
+.data              0x104   0x30002c50
+.data.rel.local     0x28   0x30002d54
+.data.rel            0xc   0x30002d7c
+.bss               0x888   0x30002d88
+.comment           0x24c          0x0
+.ARM.attributes     0x26          0x0
+Total             0x3fae
+
+
