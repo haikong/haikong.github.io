@@ -344,8 +344,8 @@ void Tft_Lcd_Init(int type)
 		
 			g_fb_base_addr = LCDFRAMEBUFFER;
 			g_bpp = 24;
-			g_xsize = 480;
-			g_ysize = 272;
+			g_xsize = 272;
+			g_ysize = 480;
 			break;
 
     default:
