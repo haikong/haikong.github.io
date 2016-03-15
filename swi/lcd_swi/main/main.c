@@ -70,13 +70,13 @@ void dma_uart_test(void)
 void lcd_test(void)
 {
 	char c;
-	printf("please input a charactor to select function.\n\t"
-			"1-Test_Lcd_Tft_16Bit_240320.\n\t"
-			"2-Test_Lcd_Tft_8Bit_240320.\n\t"
-			"3-Test_Lcd_Tft_16Bit_640480.\n\t"
-			"4-Test_Lcd_Tft_8Bit_640480.\n\t"
-			"5-Test_Lcd_Tft_24Bit_480272.\n\t"
-			"q-for quit test.\n");
+	printf("please input a charactor to select function.\n");
+	printf("1-Test_Lcd_Tft_16Bit_240320.\n\r");
+	printf("2-Test_Lcd_Tft_8Bit_240320.\n\r");
+	printf("3-Test_Lcd_Tft_16Bit_640480.\n\r");
+	printf("4-Test_Lcd_Tft_8Bit_640480.\n\r");
+	printf("5-Test_Lcd_Tft_24Bit_480272.\n\r");
+	printf("q-for quit test.\n");
 	while((c = getc()) != 'q')
 	{
 		printf("%c\n\r",c);

@@ -309,7 +309,7 @@ void Tft_Lcd_Init(int type)
 			 *			  = 60Hz
 			 * 3. LCDCON5:
 			 *	  设置显示模式为24BPP时的数据格式: 8:8:8
-			 *	  设置HSYNC、VSYNC脉冲的极性(这需要参考具体LCD的接口信号): 不反转
+			 *	  设置HSYNC、VSYNC脉冲的极性(这需要参考具体LCD的接口信号): 反转
 			 */
 			LCDCON1 = (CLKVAL_TFT_272480<<8) | (LCDTYPE_TFT<<5) | \
 					  (BPPMODE_24BPP<<1) | (ENVID_DISABLE<<0);
@@ -317,14 +317,14 @@ void Tft_Lcd_Init(int type)
 					  (VFPD_272480<<6) | (VSPW_272480);
 			LCDCON3 = (HBPD_272480<<19) | (HOZVAL_TFT_272480<<8) | (HFPD_272480);
 			LCDCON4 = HSPW_272480;
-			LCDCON5 = (FORMAT24BPP_MSB<<12) ;
+			LCDCON5 = (FORMAT24BPP_MSB<<12) | (HSYNC_INV<<9) | (VSYNC_INV<<8) | (BSWP<<1);
 		
 			/*
 			 * 设置LCD控制器的地址寄存器LCDSADDR1~3
 			 * 帧内存与视口(view point)完全吻合，
 			 * 图像数据格式如下：
 			 *		   |----PAGEWIDTH----|
-			 *	  y/x  0   1   2	   480
+			 *	  y/x  0   1   2	   479
 			 *	   0   rgb rgb rgb ... rgb
 			 *	   1   rgb rgb rgb ... rgb
 			 * 1. LCDSADDR1:
@@ -336,7 +336,7 @@ void Tft_Lcd_Init(int type)
 			 */
 			LCDSADDR1 = ((LCDFRAMEBUFFER>>22)<<21) | LOWER21BITS(LCDFRAMEBUFFER>>1);
 			LCDSADDR2 = LOWER21BITS((LCDFRAMEBUFFER+ \
-						(LINEVAL_TFT_272480+1)*(HOZVAL_TFT_272480+1)*4)>>1);
+						(LINEVAL_TFT_272480+1)*(HOZVAL_TFT_272480+1)*4)>>1) ;
 			LCDSADDR3 = (0<<11) | (LCD_XSIZE_TFT_272480*4/2);
 		
 			/* 禁止临时调色板寄存器 */
@@ -344,8 +344,8 @@ void Tft_Lcd_Init(int type)
 		
 			g_fb_base_addr = LCDFRAMEBUFFER;
 			g_bpp = 24;
-			g_xsize = 272;
-			g_ysize = 480;
+			g_xsize = 480;
+			g_ysize = 272;
 			break;
 
     default:
