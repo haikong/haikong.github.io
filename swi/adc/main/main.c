@@ -7,6 +7,7 @@
 #include "printf.h"
 #include <dma.h>
 #include <lcdlib.h>
+#include <adc.h>
 
 /*-O2优化时参数需加volatile,否则被优化为0*/
 static  void wait(volatile unsigned long time)
@@ -112,6 +113,18 @@ void lcd_test(void)
 	printf("Quit for lcd test.\n");
 }
 
+/*nomal adc test for variable resistance*/
+void adc_test(void)
+{
+	char c;
+	printf("Initialization adc......\n");
+	adc_init(PRESCVL,SEL_MUX);
+	adc_adta();
+	printf("Now read the variable resistance value:\n");
+	while((c = getc()) != 'q')
+		printf("%c:%d\n",c,adc_adta());
+}
+
 /*main*/
 int main(int argc,char** argv)
 {
@@ -121,7 +134,7 @@ int main(int argc,char** argv)
     uart0_init();
 	init_led();
 	init_irq();
-	lcd_test();
+	adc_test();
 	while(1);
 	return 0;
 }
