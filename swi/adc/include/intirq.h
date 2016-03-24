@@ -15,7 +15,7 @@ extern "C"{
 #define ISR_EINT3_OFT     3
 #define ISR_EINT4_7_OFT   4
 #define ISR_EINT8_23_OFT  5
-#define ISR_NOTUSED6_OFT  6
+#define ISR_CAM_OFT  	  6
 #define ISR_BAT_FLT_OFT   7
 #define ISR_TICK_OFT      8
 #define ISR_WDT_OFT       9
@@ -41,6 +41,7 @@ extern "C"{
 #define ISR_SPI1_OFT      29
 #define ISR_RTC_OFT       30
 #define ISR_ADC_OFT       31
+
 
 
 // PENDING BIT

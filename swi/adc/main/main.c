@@ -119,10 +119,24 @@ void adc_test(void)
 	char c;
 	printf("Initialization adc......\n");
 	adc_init(PRESCVL,SEL_MUX);
-	adc_adta();
-	printf("Now read the variable resistance value:\n");
+	printf("input 'a' to start normal adc\n\rand input 't' to start ts\n\r'q' for quit.\n\r");						
 	while((c = getc()) != 'q')
-		printf("%c:%d\n",c,adc_adta());
+	{
+		switch(c){
+		case 'a':{
+			start_adc();			
+			printf("Now read the variable resistance value:%d\n\r",adc_adta());
+		break;	
+		}
+		case 't':{
+			test_ts();
+			break;
+		}
+		default:
+			break;
+		}
+	}
+	printf("Quit for adc test.\n\r");
 }
 
 /*main*/

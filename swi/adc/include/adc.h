@@ -5,10 +5,14 @@
 extern "C"{
 #endif
 
-#define PRESCVL		49				//分频系数
-#define SEL_MUX		2				//AIN2
+#define PRESCVL				49				//分频系数
+#define SEL_MUX				2				//AIN2
+#define WAIT_INTERRUPT		(0xd3)			//等待中断模式
+#define SEPARATE_X_POSITION	(0x69)			//分离的x轴坐标转换模式
+#define SEPARATE_Y_POSITION	(0x9A)			//分离的y轴坐标转换模式
+#define AUTO_XY_POSITION	(0x0c)			//自动xy轴坐标转换模式
+#define ADC_BASEADDR		0x58000000		//adc寄存器基地址
 
-#define ADC_BASEADDR	0x58000000	//adc寄存器基地址
 /*ADC configuration registers*/
 typedef struct _ADC_REG{
 	unsigned long ACCON;		//控制寄存器
@@ -27,17 +31,14 @@ typedef struct _ADC_REG{
 void adc_init(unsigned char prscvl,unsigned char sel_mux);
 
 /*
-*	设置触摸屏参数
-*/
-void ts_init(void);
-
-/*
 *	普通ADC转换数值
 */
 int inline adc_adta(void);
 
 /*start adc transform*/
 void inline start_adc(void);
+//ts test
+void test_ts(void);
 
 #ifdef	__cplusplus
 }
