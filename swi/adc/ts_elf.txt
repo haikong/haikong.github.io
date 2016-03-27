@@ -1,0 +1,15 @@
+ts_elf  :
+section             size         addr
+.init              0x70c          0x0
+.text             0x3fb8   0x30000000
+.rodata            0x350   0x30003fb8
+.rodata.str1.4     0x380   0x30004308
+.data              0x104   0x30004688
+.data.rel.local     0x28   0x3000478c
+.data.rel            0xc   0x300047b4
+.bss               0x89c   0x300047c0
+.ARM.attributes     0x26          0x0
+.comment           0x306          0x0
+Total             0x5a94
+
+
