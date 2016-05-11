@@ -6,7 +6,8 @@ extern "C"{
 #endif
 
 /*The CPU maxium interrupts*/
-#define MAX_IRQ     32
+#define MAX_IRQ     	32
+#define EXTERN_MAX_IRQ	20
 
 /*the cpu all interrupts*/
 #define ISR_EINT0_OFT     0
@@ -41,8 +42,6 @@ extern "C"{
 #define ISR_SPI1_OFT      29
 #define ISR_RTC_OFT       30
 #define ISR_ADC_OFT       31
-
-
 
 // PENDING BIT
 #define BIT_EINT0		(0x1)
@@ -79,7 +78,7 @@ extern "C"{
 #define BIT_ADC			(0x1<<31)
 #define BIT_ALLMSK		(0xffffffff)
 
-/*sub PENDING bit for extern BIT_EINT4_7*/
+/*sub PENDING bit for extern subscrpend*/
 #define BIT_SUB_ALLMSK	(0x7fff)
 #define BIT_SUB_AC97 	(0x1<<14)
 #define BIT_SUB_WDT 	(0x1<<13)
@@ -97,12 +96,18 @@ extern "C"{
 #define BIT_SUB_TXD0	(0x1<<1)
 #define BIT_SUB_RXD0	(0x1<<0)
 
+/*extern0-23 interrput signaling method*/
+#define 	LLEVL		(0x0)			// Low level
+#define 	HLEVL		(0x1)			// High level
+#define 	FETIG		(0x2)			// Falling edge triggered
+#define 	RETIG		(0x4)			// Rising edge triggered
+#define 	BETRIG		(0x6)			// Both edge triggered
+/**********************************************************/
 void init_irq(void);
-int register_interrupt(unsigned int vector_num,void (*vector_handle)(void));
+int register_interrupt(unsigned int vector_num,void (*vector_handle)(unsigned int));
+int register_extern_int( unsigned int vector_num,void (*vector_handle)(unsigned int));
 void C_IRQ_Handler(int i,int j);
 void Timer0_Handle(void);
-void Dma0_Handle(void);
-
 
 #ifdef	__cplusplus
 }

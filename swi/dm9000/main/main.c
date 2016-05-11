@@ -9,9 +9,11 @@
 #include <lcdlib.h>
 #include <adc.h>
 #include <dm9000.h>
+#include <miscellaneous.h>
+#include <test.h>
 
 /*-O2优化时参数需加volatile,否则被优化为0*/
-static  void wait(volatile unsigned long time)
+static  inline void wait(volatile unsigned long time)
 {
 	for(;time > 0;time--);
 }
@@ -53,22 +55,7 @@ void clean_bss(void)
         *p = 0;
 }
 
-/*just test for dma_uart*/
-void dma_uart_test(void)
-{
-	int ret;
-	/*register dma0 interrupt*/
-	ret = register_interrupt(17,Dma0_Handle);
-	if(ret)
-	{
-		printf("register dma int_handle error.\n");
-		return ;
-	}
-    char temp[255] = "Hello world!This is a dma send buffer.\nHello world!This is a dma send buffer.\n";
-    /*use uart0*/
-    DMA_UART((unsigned long*)0x50000020,temp,96,1,1);
-}
-
+//
 void lcd_test(void)
 {
 	char c;
@@ -149,8 +136,9 @@ int main(int argc,char** argv)
     uart0_init();
 	init_led();
 	init_irq();
-	dm9000_init();
 	DM9000_Init();
+	test_dm9000();
+	arp_test();
 	while(1);
 	return 0;
 }

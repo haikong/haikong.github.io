@@ -1,8 +1,10 @@
 #include <dm9000.h>
 #include <s3c2440_addr.h>
 #include <stdio.h>
+#include <intirq.h>
+#include <test.h>
 
-static unsigned char mac_addr[6] = {0xa,0xb,0xc,0xd,0xe,0xf};
+static unsigned char mac_addr[6] = {0xaa,0xbb,0xcc,0xdd,0xee,0xff};
 
 /*****************************************************************************
  函 数 名  : DM9000_WRITE_REG
@@ -49,7 +51,7 @@ static unsigned char inline DM9000_READ_REG(unsigned char reg )
 
 /*****************************************************************************
  函 数 名  : test_dm9000_ID
- 功能描述  : just for testing the dm9000 Vender ID and product ID
+ 功能描述  : just for testing the dm9000 Vender ID and product ID MAC address
  输入参数  : void
  输出参数  : 无
  返 回 值  : void
@@ -73,11 +75,17 @@ void test_dm9000_ID( void )
 	pid = DM9000_READ_REG(PIDL);
 	pid |= DM9000_READ_REG(PIDH) << 8;
 	printf("VID = %x,PID = %x.\n\r",vid,pid);
+	printf("MAC = %x",DM9000_READ_REG(PAR)&0x00ff);
+	printf(" %x",DM9000_READ_REG(PAR+1)&0x00ff);
+	printf(" %x",DM9000_READ_REG(PAR+2)&0x00ff);
+	printf(" %x",DM9000_READ_REG(PAR+3)&0x00ff);
+	printf(" %x",DM9000_READ_REG(PAR+4)&0x00ff);
+	printf(" %x\r\n",DM9000_READ_REG(PAR+5)&0x00ff);
 
 }
 
 /*****************************************************************************
- 函 数 名  : test_dm9000
+ 函 数 名  : dm9000_regs
  功能描述  : display the dm9000 registers
  输入参数  : void
  输出参数  : 无
@@ -91,7 +99,7 @@ void test_dm9000_ID( void )
     修改内容   : 新生成函数
 
 *****************************************************************************/
-static void test_dm9000( void )
+static void dm9000_regs( void )
 {
     printf("NCR = %x\n\r",DM9000_READ_REG(NCR));
     printf("NSR = %x\n\r",DM9000_READ_REG(NSR));
@@ -109,6 +117,36 @@ static void test_dm9000( void )
 }
 
 /*****************************************************************************
+ 函 数 名  : void  udelay_us(int us)
+ 功能描述  : just for udelay some times about xx us,FCK = 200MHZ = 5ns.
+ 输入参数  : us
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年4月5日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void udelay_us(unsigned int us)
+{
+    int i;
+	while(us--)
+		for(i = 0 ;i < 190;i++);		
+}
+
+
+static void udelay_ms(unsigned int ms)
+{
+    int i;
+	while(ms--)
+		for(i = 0 ;i < 200000;i++);		
+}
+
+/*****************************************************************************
  函 数 名  : DM9000_reset
  功能描述  : dm9000 reset function
  输入参数  : void
@@ -123,132 +161,10 @@ static void test_dm9000( void )
     修改内容   : 新生成函数
 
 *****************************************************************************/
-static void DM9000_reset( void )
+void inline DM9000_reset( void )
 {
-	DM9000_WRITE_REG(GPCR,0x1);
-	DM9000_WRITE_REG(GPR,00);
-	udelay(20);
 	DM9000_WRITE_REG(NCR,0x3);//software reset
-	udelay(2);
-	DM9000_WRITE_REG(NCR,0x0);//software reset complete
-	DM9000_WRITE_REG(NCR,0x3);//sencond software reset 
-	udelay(3);
-	DM9000_WRITE_REG(NCR,0x0);//software reset complete
-    
-}
-
-
-/*****************************************************************************
- 函 数 名  : dm9000_init
- 功能描述  : dm9000 device initialize
- 输入参数  : void
- 输出参数  : 无
- 返 回 值  : void
- 调用函数  : 
- 被调函数  : 
- 
- 修改历史      :
-  1.日    期   : 2016年3月30日
-    作    者   : haikong
-    修改内容   : 新生成函数
-
-*****************************************************************************/
-void dm9000_init( void )
-{
-	//setting dm9000 extern interrupt
-	GPFCON |= 0x2 << 14;
-	test_dm9000_ID();
-	DM9000_reset();
-	test_dm9000_ID();
-}
-
-//================================================================
-//DM9000_Init()
-//1.将相关的管脚配置好
-//2.将相关的寄存器配置好
-
-//初始化寄存器主要做的事情：
-//1.复位
-//2.清楚原先的状态
-//3.对发射、接收进行控制
-//4.使能中断
-//在设置时，有些地方需要重复设置。
-//================================================================
-void DM9000_Init(void)
-{
-	unsigned char i;
-	//3.配置寄存器
-	//3.1.激活内部 PHY
-	DM9000_WRITE_REG(GPCR,0x01);//设置 GPCR bit[0]=1，使 DM9000 为 GPIO0 为输出
-	DM9000_WRITE_REG(GPR,0x00);//GPR bit[0]=0，使 GPIO0 输出低电平以激活内部 PHY
-	udelay(5000);
-
-	//3.2 软件复位
-	DM9000_WRITE_REG(NCR,0x03); //软件复位，MAC 内部循环反馈
-	udelay(3000); //延时 10us 以上，等待软件复位完成
-	DM9000_WRITE_REG(NCR,0x00); //复位完成，设置正常工作模式
-	DM9000_WRITE_REG(NCR,0x03); //第二次软件复位。确保软件复位完全成功
-	udelay(3000);
-	DM9000_WRITE_REG(NCR,0x00);
-
-	//3.3 使能中断
-	DM9000_WRITE_REG(IMR,0x80);//使能指向 SRAM 的指针的自动返回功能
-
-
-	//3.4 清除原网络和中断状态
-	DM9000_WRITE_REG(NSR,0x2c); //清除各种状态标志位
-	DM9000_WRITE_REG(ISR,0xbf); //清除所有中断标志位,8-bit
-
-	//3.5 对发射和接收进行新的控制
-	// 对中断进行新的控制
-	DM9000_WRITE_REG(RCR,0x39);//接收控制
-	DM9000_WRITE_REG(TCR,0x00);//发送控制
-	DM9000_WRITE_REG(BPTR,0x3f);//设置 RX 的最低阀值，小于将产生拥塞
-	DM9000_WRITE_REG(FCTR,0x00);//接收 FIFO 门限 3K，8K
-	DM9000_WRITE_REG(FCR,0xff);//启动一些控制功能
-	DM9000_WRITE_REG(SMCR,0x00);//未启动特殊模式
-
-	//3.6 设置 MAC 地址
-	for(i=0; i<6; i++)
-		DM9000_WRITE_REG(PAR+i, mac_addr[i]);
-	//3.7 清除原网络状态和中断标志位
-	DM9000_WRITE_REG(NSR,0x2c); //清除各种状态标志位
-	DM9000_WRITE_REG(ISR,0x3f); //清除所有中断标志位,8-bit
-
-	//3.8 使能中断
-	DM9000_WRITE_REG(IMR,0x81);//使能指向 SRAM 的指针满后自动返回功能。
-	//使能数据包接收中断
-	/////////////////MAC 地址///////////////////////////////
-	test_dm9000_ID();
-	printf("\r\nMAC = %x",DM9000_READ_REG(PAR)&0x00ff);
-	printf(" %x",DM9000_READ_REG(PAR+1)&0x00ff);
-	printf(" %x",DM9000_READ_REG(PAR+2)&0x00ff);
-	printf(" %x",DM9000_READ_REG(PAR+3)&0x00ff);
-	printf(" %x",DM9000_READ_REG(PAR+4)&0x00ff);
-	printf(" %x\r\n",DM9000_READ_REG(PAR+5)&0x00ff);
-	test_dm9000();
-}
-
-/*****************************************************************************
- 函 数 名  : void  udelay(int us)
- 功能描述  : just for udelay some times about xx ns.
- 输入参数  : us
- 输出参数  : 无
- 返 回 值  : void
- 调用函数  : 
- 被调函数  : 
- 
- 修改历史      :
-  1.日    期   : 2016年4月5日
-    作    者   : QSWWD
-    修改内容   : 新生成函数
-
-*****************************************************************************/
-void udelay(unsigned int us)
-{
-    int i;
-	while(us--)
-		for(i = 0 ;i < 1000;i++);		
+	udelay_us(20);    
 }
 
 /*****************************************************************************
@@ -267,7 +183,7 @@ void udelay(unsigned int us)
     修改内容   : 新生成函数
 
 *****************************************************************************/
-void DM9000_sendPacket( unsigned char* data_src, unsigned int length )
+void DM9000_sendPacket(char* data_src, unsigned int length )
 {
     unsigned int len;
 	int i;
@@ -283,7 +199,7 @@ void DM9000_sendPacket( unsigned char* data_src, unsigned int length )
 	dm9000_io_outb(DM9000_CMD_BASE,MWCMD);
 	for(i = 0;i < len;i +=2)
 	{
-		udelay(20);
+		udelay_us(2);
 		dm9000_io_outb(DM9000_DAT_BASE,data_src[i] | (data_src[i + 1] << 8));	
 	}
 	//setting the TCR and sending data to the network
@@ -302,7 +218,7 @@ void DM9000_sendPacket( unsigned char* data_src, unsigned int length )
 		if((DM9000_READ_REG(TSR1) & 0xfc) == 0x0)
 			printf("TSR1 succeed\n");
 		else
-			printf("TSR1 failed\n");;
+			printf("TSR1 failed\n");
 	}
 	else
 	{
@@ -393,5 +309,145 @@ int dm9000_revPacket( unsigned char* data_src )
 	 	return -1;
 	 }
 
+}
+
+/*****************************************************************************
+ 函 数 名  : dm9000_isr
+ 功能描述  : dm9000 interrput service program
+ 输入参数  : void
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年4月19日
+    作    者   : haikong
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+
+static void dm9000_isr(unsigned int vector)
+{
+	int i;
+	unsigned char buf[1000];
+	i = dm9000_revPacket(buf);
+	if(i >0)
+		arp_process((char*)buf,i);
+}
+
+/*****************************************************************************
+ 函 数 名  : dm9000_gpio_init
+ 功能描述  : dm9000 some needed gpio initialize
+ 输入参数  : void
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年4月19日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_gpio_init( void )
+{
+    //setting dm9000 extern interrupt
+	GPFCON |= 0x2 << 14;
+	//setting EINT7 is Rising edge triggered
+	EXTINT0 &=  ~(7 << 28);
+	EXTINT0 |= (5 << 28);
+	//register EINT7 ISR
+	register_extern_int(7,dm9000_isr);
+}
+
+/*****************************************************************************
+ 函 数 名  : dm9000_init
+ 功能描述  : dm9000 device initialize
+	//1.将相关的管脚配置好
+	//2.将相关的寄存器配置好
+
+	//初始化寄存器主要做的事情：
+	//1.复位
+	//2.清楚原先的状态
+	//3.对发射、接收进行控制
+	//4.使能中断
+	//在设置时，有些地方需要重复设置。
+ 输入参数  : void
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年3月30日
+    作    者   : haikong
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+
+void DM9000_Init(void)
+{
+	unsigned char i;
+	//setting dm9000 ISR
+	dm9000_gpio_init();
+	//3.配置寄存器
+	//3.1.激活内部 PHY
+	DM9000_WRITE_REG(GPCR,0x01);//设置 GPCR bit[0]=1，使 DM9000 为 GPIO0 为输出
+	DM9000_WRITE_REG(GPR,0x00);//GPR bit[0]=0，使 GPIO0 输出低电平以激活内部 PHY
+	udelay_us(20);
+
+	//3.2 软件复位
+	DM9000_WRITE_REG(NCR,0x03); //软件复位，MAC 内部循环反馈
+	udelay_us(20); //延时 10us 以上，等待软件复位完成
+	DM9000_WRITE_REG(NCR,0x00); //复位完成，设置正常工作模式
+	DM9000_WRITE_REG(NCR,0x03); //第二次软件复位。确保软件复位完全成功
+	udelay_us(20);
+	DM9000_WRITE_REG(NCR,0x00);
+
+	//3.3 使能中断
+	DM9000_WRITE_REG(IMR,0x80);//使能指向 SRAM 的指针的自动返回功能
+
+
+	//3.4 清除原网络和中断状态
+	DM9000_WRITE_REG(NSR,0x2c); //清除各种状态标志位
+	DM9000_WRITE_REG(ISR,0xbf); //清除所有中断标志位,8-bit
+
+	//3.5 对发射和接收进行新的控制
+	// 对中断进行新的控制
+	DM9000_WRITE_REG(RCR,0x39);//接收控制
+	DM9000_WRITE_REG(TCR,0x00);//发送控制
+	DM9000_WRITE_REG(BPTR,0x3f);//设置 RX 的最低阀值，小于将产生拥塞
+	DM9000_WRITE_REG(FCTR,0x00);//接收 FIFO 门限 3K，8K
+	DM9000_WRITE_REG(FCR,0xff);//启动一些控制功能
+	DM9000_WRITE_REG(SMCR,0x00);//未启动特殊模式
+
+	//3.6 设置 MAC 地址
+	for(i=0; i<6; i++)
+		DM9000_WRITE_REG(PAR+i, mac_addr[i]);
+	//3.7 清除原网络状态和中断标志位
+	DM9000_WRITE_REG(NSR,0x2c); //清除各种状态标志位
+	DM9000_WRITE_REG(ISR,0x3f); //清除所有中断标志位,8-bit
+
+	//3.8 使能中断
+	DM9000_WRITE_REG(IMR,0x81);//使能指向 SRAM 的指针满后自动返回功能。
+}
+
+
+void xxx(void)
+{
+	DM9000_reset();	
+	DM9000_sendPacket("1",1);	
+
+}
+
+void test_dm9000(void)
+{
+	test_dm9000_ID();
+	dm9000_regs();
+	udelay_ms(5);
+	test_dm9000_ID();
+	dm9000_regs();
 }
 

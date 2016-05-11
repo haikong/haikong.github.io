@@ -45,8 +45,8 @@ void memsetup(void)
 	p[2]	= 0x00000700;   //BANKCON1
 	p[3]	= 0x00000700;   //BANKCON2
 	p[4]	= 0x00000700;   //BANKCON3
-	//p[5]	= 0x00001f7c;   //BANKCON4
-	p[5]	= 0x00000700;   //BANKCON4
+	p[5]	= 0x00001f7c;   //BANKCON4
+	//p[5]	= 0x00000700;   //BANKCON4
 	p[6]	= 0x00000700;   //BANKCON5
 	p[7]	= 0x00018005;   //BANKCON6
 	p[8]	= 0x00018005;   //BANKCON7
@@ -56,18 +56,6 @@ void memsetup(void)
 	p[12]	= 0x00000030;   //MRSRB7
 }
 
-/*init led*/
-void init_led(void)
-{
-	    // LED1-LED4对应的4根引脚设为输出
-        GPBCON = GPB5_out | GPB6_out | GPB7_out | GPB8_out ;
-        // K1-K2对应的2根引脚设为输入
-        GPGCON = GPG11_in & GPG3_in ;
-        // K3-K4对应的2根引脚设为输入
-        GPFCON = GPF2_in & GPF0_in ;
-        //LED全部熄灭
-        GPBDAT = ~0;
-}
 
 /*
  * 对于MPLLCON寄存器，[19:12]为MDIV，[9:4]为PDIV，[1:0]为SDIV
@@ -107,25 +95,5 @@ void copy_steppingstone_to_sdram(void)
         pdwDest++;
         pdwSrc++;
     }
-}
-/*
-*	timer initialize:
-*	定时器输入时钟频率 = PCLK / {预分频值+1} / {分频值};PCLK = 100MHz
-*	{预分频值} = 0~255
-*	{分频值}= 2, 4, 8, 16
-*   定时器输入时钟频率 = 1MHz
-*	预分频值 = 24
-*	分频值 = 2
-*	定时时间 = 1.5s，PWM = 1/3
-*	use timer0,not dead area,not dma
-*/
-void timer_init(void)
-{
-	TCFG0 	= 49;			//Prescaler 0 = 49
-	TCFG1 	= 0x00;			//选择PWM定时器0的选通输入,MUX = 1/2
-	TCNTB0 	= 50000;			//1s
-	TCMPB0 	= 5000;			//0.1s
-	TCON  	= (1 << 1);		//手动更新,停止定时器0
-	TCON 	= 0x9;			//自动重载开启,start timer
 }
 

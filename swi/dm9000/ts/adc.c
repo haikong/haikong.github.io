@@ -71,7 +71,7 @@ static void adc_interrupt(void)
 }
 
 //adc and ts interrupt handler
-static void adc_ts_inthandle(void)
+static void adc_ts_inthandle(unsigned int vector)
 {
 	if(SUBSRCPND & BIT_SUB_TC)
 		ts_interrupt();

@@ -1,6 +1,8 @@
 #include <s3c2440_addr.h>
 #include <dma.h>
 #include <serial.h>
+#include "printf.h"
+#include <intirq.h>
 
 #if 0
 /*
@@ -74,6 +76,15 @@ void dma_irq_Handle(void)
 	}
 }
 #endif
+
+/*dma0 interrupt handler*/
+static void Dma0_Handle(unsigned int vector)
+{
+	printf("finish the transport.\n");
+	/*set beep ring*/
+	GPBDAT = 0b1001 << 5;
+}
+
 
 void DMA_memcpy(void* p_dst,const void* p_src,int len)
 {
@@ -180,6 +191,21 @@ void DMA_UART(void* p_dst,const void* p_src,unsigned int len,unsigned char mode,
 	INTMSK &= ~(1 << 17);
 }
 
+/*just test for dma_uart*/
+void dma_uart_test(void)
+{
+	int ret;
+	/*register dma0 interrupt*/
+	ret = register_interrupt(17,Dma0_Handle);
+	if(ret)
+	{
+		printf("register dma int_handle error.\n");
+		return ;
+	}
+    char temp[255] = "Hello world!This is a dma send buffer.\nHello world!This is a dma send buffer.\n";
+    /*use uart0*/
+    DMA_UART((unsigned long*)0x50000020,temp,96,1,1);
+}
 
 #if 0
 

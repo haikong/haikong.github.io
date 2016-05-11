@@ -65,8 +65,12 @@ extern "C"{
 #define SUBSRCPND           (*(volatile unsigned long *)0x4A000018)
 #define INTSUBMSK           (*(volatile unsigned long *)0x4A00001c)
 /*external interrupt registers*/
+#define EXTINT0				(*(volatile unsigned long *)0x56000088)	//External interrupt control register 0-7
+#define EXTINT1				(*(volatile unsigned long *)0x5600008c)	//External interrupt control register 8-15
+#define EXTINT2				(*(volatile unsigned long *)0x56000090)	//External interrupt control register 16-23
 #define EINTMASK            (*(volatile unsigned long *)0x560000a4)
 #define EINTPEND            (*(volatile unsigned long *)0x560000a8)
+
 /* NAND Flash registers */
 #define uNFCONF              (*(volatile unsigned int  *)0x4e000000)
 #define uNFCMD               (*(volatile unsigned char *)0x4e000004)

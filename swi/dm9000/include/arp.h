@@ -1,6 +1,32 @@
 #ifndef _ARP_H__
 #define _ARP_H__
 
+/**
+ * enum sock_type - Socket types
+ * @SOCK_STREAM: stream (connection) socket
+ * @SOCK_DGRAM: datagram (conn.less) socket
+ * @SOCK_RAW: raw socket
+ * @SOCK_RDM: reliably-delivered message
+ * @SOCK_SEQPACKET: sequential packet socket
+ * @SOCK_DCCP: Datagram Congestion Control Protocol socket
+ * @SOCK_PACKET: linux specific way of getting packets at the dev level.
+ *		  For writing rarp and other similar things on the user level.
+ *
+ * When adding some new socket type please
+ * grep ARCH_HAS_SOCKET_TYPE include/asm-* /socket.h, at least MIPS
+ * overrides this enum for binary compat reasons.
+ */
+enum sock_type {
+	SOCK_STREAM	= 1,
+	SOCK_DGRAM	= 2,
+	SOCK_RAW	= 3,
+	SOCK_RDM	= 4,
+	SOCK_SEQPACKET	= 5,
+	SOCK_DCCP	= 6,
+	SOCK_PACKET	= 10,
+};
+
+
 //以太网头部结构
 typedef struct _eth_hdr {
 	unsigned char 	d_mac[6]; 	//目的地址
@@ -10,6 +36,7 @@ typedef struct _eth_hdr {
 
 //ARP 首部结构
 typedef struct _arp{
+	 struct _eth_hdr ethhdr;	//以太网头部
 	 unsigned short hwtype; 	//硬件类型(1 表示传输的是以太网 MAC 地址)
 	 unsigned short protocol; 	//协议类型(0x0800 表示传输的是 IP 地址)
 	 unsigned char  hwlen; 		//硬件地址长度(6)
@@ -61,9 +88,16 @@ typedef struct _udp{
 	 unsigned short udpchksum; 	//UDP 校验和(可选项) （40 41）
 }t_UDP;
 
+//MAC protocole
+typedef enum _mac_proto{
+	ETHTYPE_ARP = 0,
+	ETHTYPE_IP,	
+}e_MAC_PROTO;
+
+#if 0
 #define htons(x) ({\
 	typeof(x) _x = x;	\
-	_x = (((unsigned short)x >> 8) & 0xff) | ((x & 0xff) << 8);\
+	_x = (((unsigned short)x >> 8) & 0xff) | (((unsigned short)x & 0xff) << 8);\
 	x = _x;\
 })
 
@@ -75,4 +109,16 @@ typedef struct _udp{
 	_x |= ((unsigned int)x >> 24) & 0xff;\
 	x = _x;\
 })
+#endif
+
+#define htons(x) ((unsigned short)(\
+	(((unsigned short)(x) & (unsigned short)0x00ffU) << 8) |\
+	(((unsigned short)(x) & (unsigned short)0xff00U) >> 8)))
+	
+#define htonl(x) ((unsigned int)(				\
+	(((unsigned int)(x) & (unsigned int)0x000000ffUL) << 24) |		\
+	(((unsigned int)(x) & (unsigned int)0x0000ff00UL) <<  8) |		\
+	(((unsigned int)(x) & (unsigned int)0x00ff0000UL) >>  8) |		\
+	(((unsigned int)(x) & (unsigned int)0xff000000UL) >> 24)))
+
 #endif

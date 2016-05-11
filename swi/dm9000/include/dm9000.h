@@ -44,7 +44,6 @@
 #define ISR			0xfe			//Interrupt status register
 #define IMR			0xff			//Interrupt mask register
 
-void inline udelay(unsigned int us);
 #if 0
 //dm9000 write regiser macro
 #define DM9000_WRITE_REG(reg,data) \
@@ -70,8 +69,11 @@ void inline udelay(unsigned int us);
 //dm9000 read a byte from a register
 #define dm9000_io_inb(reg)	(*(volatile unsigned short*)(reg))
 
-void dm9000_init( void );
+void test_dm9000( void );
 void DM9000_Init(void);
-
+void Dma0_Handle(void);
+void DM9000_sendPacket(char* data_src, unsigned int length );
+void inline DM9000_reset( void );
+int dm9000_revPacket( unsigned char* data_src );
 #endif
 

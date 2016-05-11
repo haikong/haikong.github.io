@@ -15,7 +15,7 @@ OBJDUMP		= $(CROSS_COMPILE)objdump
 export AS LD CC CPP AR NM
 export STRIP OBJCOPY OBJDUMP
 
-CFLAGS := -Wall -Werror -O2 -fpic -nostdlib
+CFLAGS := -Wall -Werror  -fpic -nostdlib
 CFLAGS += -I $(shell pwd)/include
 
 LDFLAGS := -Tts.lds -nostdlib
@@ -37,7 +37,10 @@ obj-y += dma/
 obj-y += lib/
 obj-y += lcd/
 obj-y += ts/
+obj-y += glob/
 obj-y += dm9000/
+obj-y += test/
+obj-y += miscellaneous/
 obj-y += main/
 
 all :
