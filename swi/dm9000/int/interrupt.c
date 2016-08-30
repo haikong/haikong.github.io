@@ -107,12 +107,16 @@ int register_interrupt(unsigned int vector_num,void (*vector_handle)(unsigned in
 int register_extern_int( unsigned int vector_num,void (*vector_handle)(unsigned int))
 {
     
-    if(vector_num > (EXTERN_MAX_IRQ - 1)){
+    if((vector_num > (EXTERN_MAX_IRQ - 1)) || (vector_num < 4)){
         printf("Invalid inteerupt vector num.\n");
         return -1;
     }
-    externINT_handle_array[vector_num - 4] = vector_handle;
-	EINTMASK &= ~(1 << (vector_num - 4));
+    externINT_handle_array[vector_num] = vector_handle;
+	EINTMASK &= ~(1 << vector_num);
+	if(vector_num < 8)
+		INTMSK &= ~(1 << 4);
+	else
+		INTMSK &= ~(1 << 5);
 	return 0;
 }
 
@@ -123,12 +127,13 @@ int register_extern_int( unsigned int vector_num,void (*vector_handle)(unsigned 
 void C_IRQ_Handler(int i,int j)
 {
 	unsigned long oft = INTOFFSET;
-	printf("C_IRQ_Handler:%ld vector\n\r",oft);
 	/* 调用中断服务程序 */
     isr_handle_array[oft](oft);
+#if 0	
 	//清外部中断4-23
 	if ((oft == 4) || (oft == 5))
         EINTPEND = 0xfffff0;    //EINT4-7合用IRQ4，EINT8-23合用IRQ5,注意EINTPEND[3:0]保留未用，向这些位写入1可能导致未知结果
+#endif
 	//清除中断源
 	SUBSRCPND = SUBSRCPND;
 	SRCPND |= 1 << oft;

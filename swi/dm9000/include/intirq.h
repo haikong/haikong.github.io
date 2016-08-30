@@ -7,7 +7,8 @@ extern "C"{
 
 /*The CPU maxium interrupts*/
 #define MAX_IRQ     	32
-#define EXTERN_MAX_IRQ	20
+#define EXTERN_MAX_IRQ	24
+
 
 /*the cpu all interrupts*/
 #define ISR_EINT0_OFT     0
@@ -95,6 +96,31 @@ extern "C"{
 #define BIT_SUB_ERR0	(0x1<<2)
 #define BIT_SUB_TXD0	(0x1<<1)
 #define BIT_SUB_RXD0	(0x1<<0)
+/*extern 0-23 interrupt vector number*/
+#define EXTERNIRQ0		0
+#define EXTERNIRQ1		1
+#define EXTERNIRQ2		2
+#define EXTERNIRQ3		3
+#define EXTERNIRQ4		4
+#define EXTERNIRQ5		5
+#define EXTERNIRQ6		6
+#define EXTERNIRQ7		7
+#define EXTERNIRQ8		8
+#define EXTERNIRQ9		9
+#define EXTERNIRQ10		10
+#define EXTERNIRQ11		11
+#define EXTERNIRQ12		12
+#define EXTERNIRQ13		13
+#define EXTERNIRQ14		14
+#define EXTERNIRQ15		15
+#define EXTERNIRQ16		16
+#define EXTERNIRQ17		17
+#define EXTERNIRQ18		18
+#define EXTERNIRQ19		19
+#define EXTERNIRQ20		20
+#define EXTERNIRQ21		21
+#define EXTERNIRQ22		22
+#define EXTERNIRQ23		23
 
 /*extern0-23 interrput signaling method*/
 #define 	LLEVL		(0x0)			// Low level
@@ -107,7 +133,6 @@ void init_irq(void);
 int register_interrupt(unsigned int vector_num,void (*vector_handle)(unsigned int));
 int register_extern_int( unsigned int vector_num,void (*vector_handle)(unsigned int));
 void C_IRQ_Handler(int i,int j);
-void Timer0_Handle(void);
 
 #ifdef	__cplusplus
 }

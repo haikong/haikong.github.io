@@ -37,9 +37,11 @@ obj-y += dma/
 obj-y += lib/
 obj-y += lcd/
 obj-y += ts/
+obj-y += timer/
 obj-y += glob/
 obj-y += dm9000/
 obj-y += test/
+obj-y += net/
 obj-y += miscellaneous/
 obj-y += main/
 

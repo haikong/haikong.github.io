@@ -11,6 +11,7 @@
 #include <dm9000.h>
 #include <miscellaneous.h>
 #include <test.h>
+#include <timer.h>
 
 /*-O2优化时参数需加volatile,否则被优化为0*/
 static  inline void wait(volatile unsigned long time)
@@ -130,14 +131,19 @@ void adc_test(void)
 /*main*/
 int main(int argc,char** argv)
 {
-	//timer_init();					//invoking timer0 initialize and enable timer0 handle
+	int i;
 	//swi_test();
     clean_bss();	
     uart0_init();
 	init_led();
 	init_irq();
+	#ifdef _DEBUG
+	timer_init();					//invoking timer0 initialize and enable timer0 handle	
+	register_interrupt(ISR_TIMER0_OFT,Timer0_Handle);
+	#endif
 	DM9000_Init();
-	test_dm9000();
+	for(i = 0;i < 10;i++)
+		test_dm9000();
 	arp_test();
 	while(1);
 	return 0;

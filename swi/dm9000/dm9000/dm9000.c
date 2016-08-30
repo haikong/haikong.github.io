@@ -7,7 +7,7 @@
 static unsigned char mac_addr[6] = {0xaa,0xbb,0xcc,0xdd,0xee,0xff};
 
 /*****************************************************************************
- 函 数 名  : DM9000_WRITE_REG
+ 函 数 名  : DM9000_iow
  功能描述  : setting dm9000 registers
  输入参数  : reg
              data
@@ -22,14 +22,14 @@ static unsigned char mac_addr[6] = {0xaa,0xbb,0xcc,0xdd,0xee,0xff};
     修改内容   : 新生成函数
 
 *****************************************************************************/
-static void inline DM9000_WRITE_REG(unsigned char reg,char data )
+static void inline DM9000_iow(unsigned char reg,char data )
 {
-	dm9000_io_outb(DM9000_CMD_BASE,reg);
-	dm9000_io_outb(DM9000_DAT_BASE,data);
+	DM9000_outb(reg,DM9000_CMD_BASE);
+	DM9000_outb(data,DM9000_DAT_BASE);
 }
 
 /*****************************************************************************
- 函 数 名  : DM9000_READ_REG
+ 函 数 名  : DM9000_ior
  功能描述  : reading dm9000 register content
  输入参数  : reg
  输出参数  : 无
@@ -43,10 +43,10 @@ static void inline DM9000_WRITE_REG(unsigned char reg,char data )
     修改内容   : 新生成函数
 
 *****************************************************************************/
-static unsigned char inline DM9000_READ_REG(unsigned char reg )
+static unsigned char inline DM9000_ior(unsigned char reg )
 {
-    dm9000_io_outb(DM9000_CMD_BASE,reg);
-	return dm9000_io_inb(DM9000_DAT_BASE);
+    DM9000_outb(reg,DM9000_CMD_BASE);
+	return DM9000_inb(DM9000_DAT_BASE);
 }
 
 /*****************************************************************************
@@ -70,17 +70,17 @@ void test_dm9000_ID( void )
 	unsigned short pid = 0;
 	/*Now the software reset complete over*/
 	printf("Now read the dm9000a ID infomation.\n\r");
-	vid = DM9000_READ_REG(VIDL);
-	vid |= DM9000_READ_REG(VIDH) << 8;
-	pid = DM9000_READ_REG(PIDL);
-	pid |= DM9000_READ_REG(PIDH) << 8;
+	vid = DM9000_ior(VIDL);
+	vid |= DM9000_ior(VIDH) << 8;
+	pid = DM9000_ior(PIDL);
+	pid |= DM9000_ior(PIDH) << 8;
 	printf("VID = %x,PID = %x.\n\r",vid,pid);
-	printf("MAC = %x",DM9000_READ_REG(PAR)&0x00ff);
-	printf(" %x",DM9000_READ_REG(PAR+1)&0x00ff);
-	printf(" %x",DM9000_READ_REG(PAR+2)&0x00ff);
-	printf(" %x",DM9000_READ_REG(PAR+3)&0x00ff);
-	printf(" %x",DM9000_READ_REG(PAR+4)&0x00ff);
-	printf(" %x\r\n",DM9000_READ_REG(PAR+5)&0x00ff);
+	printf("MAC = %x",DM9000_ior(PAR)&0x00ff);
+	printf(" %x",DM9000_ior(PAR+1)&0x00ff);
+	printf(" %x",DM9000_ior(PAR+2)&0x00ff);
+	printf(" %x",DM9000_ior(PAR+3)&0x00ff);
+	printf(" %x",DM9000_ior(PAR+4));
+	printf(" %x\r\n",DM9000_ior(PAR+5));
 
 }
 
@@ -101,19 +101,28 @@ void test_dm9000_ID( void )
 *****************************************************************************/
 static void dm9000_regs( void )
 {
-    printf("NCR = %x\n\r",DM9000_READ_REG(NCR));
-    printf("NSR = %x\n\r",DM9000_READ_REG(NSR));
-    printf("TCR = %x\n\r",DM9000_READ_REG(TCR));
-    printf("RCR = %x\n\r",DM9000_READ_REG(RCR));
-    printf("RSR = %x\n\r",DM9000_READ_REG(RSR));
-    printf("ROCR = %x\n\r",DM9000_READ_REG(ROCR));
-    printf("BPRT = %x\n\r",DM9000_READ_REG(BPTR));
-    printf("FCRT = %x\n\r",DM9000_READ_REG(FCTR));
-    printf("RTFCR = %x\n\r",DM9000_READ_REG(FCR));
-    printf("GPCR = %x\n\r",DM9000_READ_REG(GPCR));
-    printf("GPR = %x\n\r",DM9000_READ_REG(GPR));
-    printf("ISR = %x\n\r",DM9000_READ_REG(ISR));
-	printf("IMR = %x\n\r",DM9000_READ_REG(IMR));
+    printf("NCR = %x\n\r",DM9000_ior(NCR));
+    printf("NSR = %x\n\r",DM9000_ior(NSR));
+    printf("TCR = %x\n\r",DM9000_ior(TCR));
+    printf("TSR1 = %x\n\r",DM9000_ior(TSR1));
+    printf("TSR2 = %x\n\r",DM9000_ior(TSR2));
+    printf("RCR = %x\n\r",DM9000_ior(RCR));	
+    printf("RSR = %x\n\r",DM9000_ior(RSR));
+    printf("ROCR = %x\n\r",DM9000_ior(ROCR));
+    printf("BPRT = %x\n\r",DM9000_ior(BPTR));
+    printf("FCRT = %x\n\r",DM9000_ior(FCTR));
+    printf("RTFCR = %x\n\r",DM9000_ior(FCR));
+	printf("EPCR = %x\n\r",DM9000_ior(EPCR));
+	printf("EPAR = %x\n\r",DM9000_ior(EPAR));
+	printf("EPDRL = %x\n\r",DM9000_ior(EPDRL));
+	printf("EPDRH = %x\n\r",DM9000_ior(EPDRH));
+	printf("WCR = %x\n\r",DM9000_ior(WCR));
+    printf("GPCR = %x\n\r",DM9000_ior(GPCR));
+    printf("GPR = %x\n\r",DM9000_ior(GPR));
+    printf("SMCR = %x\n\r",DM9000_ior(SMCR));
+    printf("ISR = %x\n\r",DM9000_ior(ISR));
+	printf("IMR = %x\n\r",DM9000_ior(IMR));
+	
 }
 
 /*****************************************************************************
@@ -163,8 +172,34 @@ static void udelay_ms(unsigned int ms)
 *****************************************************************************/
 void inline DM9000_reset( void )
 {
-	DM9000_WRITE_REG(NCR,0x3);//software reset
-	udelay_us(20);    
+
+	printf("resetting DM9000\n");
+
+	/* DEBUG: Make all GPIO0 outputs, all others inputs */
+	DM9000_iow(GPCR, GPCR_GPIO0_OUT);
+	/* Step 1: Power internal PHY by writing 0 to GPIO0 pin */
+	DM9000_iow(GPR, 0);
+	/* Step 2: Software reset */
+	DM9000_iow(NCR, (NCR_LBK_INT_MAC | NCR_RST));
+
+	do {
+		printf("resetting the DM9000, 1st reset\n");
+		udelay_us(25); /* Wait at least 20 us */
+	} while (DM9000_ior(NCR) & 1);
+
+	DM9000_iow(NCR, 0);
+	DM9000_iow(NCR, (NCR_LBK_INT_MAC | NCR_RST)); /* Issue a second reset */
+
+	do {
+		printf("resetting the DM9000, 2nd reset\n");
+		udelay_us(25); /* Wait at least 20 us */
+	} while (DM9000_ior(NCR) & 1);
+
+	/* Check whether the ethernet controller is present */
+	if ((DM9000_ior(PIDL) != 0x0) ||
+		(DM9000_ior(PIDH) != 0x90))
+		printf("ERROR: resetting DM9000 -> not responding\n");
+  
 }
 
 /*****************************************************************************
@@ -190,11 +225,11 @@ void DM9000_sendPacket(char* data_src, unsigned int length )
 	unsigned char c_tmp;
 
 	//diable the dm9000 interrput
-	DM9000_WRITE_REG(IMR,0x80);
+	DM9000_iow(IMR,0x80);
 	//write the length to TXPLH and TXPLL registers
 	len = length;
-	DM9000_WRITE_REG(TXPLH,(len >> 8) & 0xff);
-	DM9000_WRITE_REG(TXPLL,len  & 0xff);
+	DM9000_iow(TXPLH,(len >> 8) & 0xff);
+	DM9000_iow(TXPLL,len  & 0xff);
 	//writing the data to TX_SRAM register , using MWCMD,for network endian
 	dm9000_io_outb(DM9000_CMD_BASE,MWCMD);
 	for(i = 0;i < len;i +=2)
@@ -203,34 +238,34 @@ void DM9000_sendPacket(char* data_src, unsigned int length )
 		dm9000_io_outb(DM9000_DAT_BASE,data_src[i] | (data_src[i + 1] << 8));	
 	}
 	//setting the TCR and sending data to the network
-	DM9000_WRITE_REG(TCR,0x1);
+	DM9000_iow(TCR,0x1);
 	//waiting until the data sending complete
 	while(1)
 	{
-		c_tmp = DM9000_READ_REG(TCR);
+		c_tmp = DM9000_ior(TCR);
 		if((c_tmp & 0x01) == 0x00)
 			break;
 	}
 	//just for test 
-	c_tmp = DM9000_READ_REG(NSR);
+	c_tmp = DM9000_ior(NSR);
 	if((c_tmp & 0x04) == 0x04)
 	{
-		if((DM9000_READ_REG(TSR1) & 0xfc) == 0x0)
+		if((DM9000_ior(TSR1) & 0xfc) == 0x0)
 			printf("TSR1 succeed\n");
 		else
 			printf("TSR1 failed\n");
 	}
 	else
 	{
-		if((DM9000_READ_REG(TSR2) & 0xfc) == 0x0)
+		if((DM9000_ior(TSR2) & 0xfc) == 0x0)
 			printf("TSR2 succeed\n");
 		else
 			printf("TSR2 failed\n");;		
 	}
 	//clear the status register ,do not to clear the interrput
-	DM9000_WRITE_REG(NSR,0x2c);
+	DM9000_iow(NSR,0x2c);
 	//enable the dm9000 reciving interrput
-	DM9000_WRITE_REG(IMR,0x81);
+	DM9000_iow(IMR,0x81);
 }
 
 /*****************************************************************************
@@ -257,18 +292,18 @@ int dm9000_revPacket( unsigned char* data_src )
 	unsigned char i;//计数用
 
 	//clear the interrput
-	if(DM9000_READ_REG(ISR) & 0x1)
-		DM9000_WRITE_REG(ISR,0x1);
+	if(DM9000_ior(ISR) & 0x1)
+		DM9000_iow(ISR,0x1);
 	 //读取 RX SRAM 的第一个字节
-	 RX_First_byte = DM9000_READ_REG(MRCMDX);//读取 RX SRAM 的第一个字节的值
+	 RX_First_byte = DM9000_ior(MRCMDX);//读取 RX SRAM 的第一个字节的值
 	 printf("RX_First_byte = 0x%x",RX_First_byte);
 	//第一次读取经常得到 00
-	 RX_First_byte = DM9000_READ_REG(MRCMDX);//第二次读取一般能得到数据
+	 RX_First_byte = DM9000_ior(MRCMDX);//第二次读取一般能得到数据
 	 printf("RX_First_byte = 0x%x",RX_First_byte);
 	 //读取 RX SRAM 的第二、三、四个字节
 	 if(RX_First_byte == 0x01)
 	 {
-	 	unsigned char io_mode = DM9000_READ_REG(ISR)>>6;
+	 	unsigned char io_mode = DM9000_ior(ISR)>>6;
 		dm9000_io_outb(DM9000_CMD_BASE,MRCMD); //将 Memory Write CMD 发送到 ADD 上
 	
 	 	if(io_mode == 0)//IO word mode
@@ -303,9 +338,9 @@ int dm9000_revPacket( unsigned char* data_src )
 	 {
 	 	printf("无数据包\n");
 		//reset dm9000 again
-		DM9000_WRITE_REG(IMR,0x80);
+		DM9000_iow(IMR,0x80);
 		DM9000_Init();
-		DM9000_WRITE_REG(IMR,0x81);
+		DM9000_iow(IMR,0x81);
 	 	return -1;
 	 }
 
@@ -357,9 +392,41 @@ static void dm9000_gpio_init( void )
 	GPFCON |= 0x2 << 14;
 	//setting EINT7 is Rising edge triggered
 	EXTINT0 &=  ~(7 << 28);
-	EXTINT0 |= (5 << 28);
+	EXTINT0 |= (HLEVL << 28);
 	//register EINT7 ISR
-	register_extern_int(7,dm9000_isr);
+	register_extern_int(EXTERNIRQ7,dm9000_isr);
+}
+/*****************************************************************************
+ 函 数 名  : static int dm9000_probe(void)
+ 功能描述  : Search DM9000 board, allocate space and register it
+ 输入参数  : 
+ 输出参数  : 无
+ 返 回 值  : 0:ok;-1:error
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年8月30日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static int dm9000_probe(void)
+{
+	unsigned int id_val;
+	id_val = DM9000_ior(VIDL);
+	id_val |= DM9000_ior(VIDH) << 8;
+	id_val |= DM9000_ior(PIDL) << 16;
+	id_val |= DM9000_ior(PIDH) << 24;
+	if (id_val == DM9000_ID) {
+		printf("dm9000 i/o: 0x%x, id: 0x%x \n", DM9000_CMD_BASE,
+		       id_val);
+		return 0;
+	} else {
+		printf("dm9000 not found at 0x%08x id: 0x%08x\n",
+		       DM9000_CMD_BASE, id_val);
+		return -1;
+	}
 }
 
 /*****************************************************************************
@@ -394,60 +461,73 @@ void DM9000_Init(void)
 	dm9000_gpio_init();
 	//3.配置寄存器
 	//3.1.激活内部 PHY
-	DM9000_WRITE_REG(GPCR,0x01);//设置 GPCR bit[0]=1，使 DM9000 为 GPIO0 为输出
-	DM9000_WRITE_REG(GPR,0x00);//GPR bit[0]=0，使 GPIO0 输出低电平以激活内部 PHY
+	DM9000_iow(GPCR,0x01);//设置 GPCR bit[0]=1，使 DM9000 为 GPIO0 为输出
+	DM9000_iow(GPR,0x00);//GPR bit[0]=0，使 GPIO0 输出低电平以激活内部 PHY
 	udelay_us(20);
 
 	//3.2 软件复位
-	DM9000_WRITE_REG(NCR,0x03); //软件复位，MAC 内部循环反馈
+	DM9000_iow(NCR,0x03); //软件复位，MAC 内部循环反馈
 	udelay_us(20); //延时 10us 以上，等待软件复位完成
-	DM9000_WRITE_REG(NCR,0x00); //复位完成，设置正常工作模式
-	DM9000_WRITE_REG(NCR,0x03); //第二次软件复位。确保软件复位完全成功
+	DM9000_iow(NCR,0x00); //复位完成，设置正常工作模式
+	DM9000_iow(NCR,0x03); //第二次软件复位。确保软件复位完全成功
 	udelay_us(20);
-	DM9000_WRITE_REG(NCR,0x00);
+	DM9000_iow(NCR,0x00);
 
 	//3.3 使能中断
-	DM9000_WRITE_REG(IMR,0x80);//使能指向 SRAM 的指针的自动返回功能
+	DM9000_iow(IMR,0x80);//使能指向 SRAM 的指针的自动返回功能
 
 
 	//3.4 清除原网络和中断状态
-	DM9000_WRITE_REG(NSR,0x2c); //清除各种状态标志位
-	DM9000_WRITE_REG(ISR,0xbf); //清除所有中断标志位,8-bit
+	DM9000_iow(NSR,0x2c); //清除各种状态标志位
+	DM9000_iow(ISR,0xf); //清除所有中断标志位,8-bit
 
 	//3.5 对发射和接收进行新的控制
 	// 对中断进行新的控制
-	DM9000_WRITE_REG(RCR,0x39);//接收控制
-	DM9000_WRITE_REG(TCR,0x00);//发送控制
-	DM9000_WRITE_REG(BPTR,0x3f);//设置 RX 的最低阀值，小于将产生拥塞
-	DM9000_WRITE_REG(FCTR,0x00);//接收 FIFO 门限 3K，8K
-	DM9000_WRITE_REG(FCR,0xff);//启动一些控制功能
-	DM9000_WRITE_REG(SMCR,0x00);//未启动特殊模式
+	DM9000_iow(RCR,0x39);//接收控制
+	DM9000_iow(TCR,0x00);//发送控制
+	DM9000_iow(BPTR,0x3f);//设置 RX 的最低阀值，小于将产生拥塞
+	DM9000_iow(FCTR,0x38);//接收 FIFO 门限 3K，8K
+	DM9000_iow(FCR,0xff);//启动一些控制功能
+	DM9000_iow(SMCR,0x00);//未启动特殊模式
 
 	//3.6 设置 MAC 地址
-	for(i=0; i<6; i++)
-		DM9000_WRITE_REG(PAR+i, mac_addr[i]);
+	for(i=0; i<6; i++){
+		DM9000_iow(PAR+i, mac_addr[i]);
+		udelay_us(1);
+	}		
 	//3.7 清除原网络状态和中断标志位
-	DM9000_WRITE_REG(NSR,0x2c); //清除各种状态标志位
-	DM9000_WRITE_REG(ISR,0x3f); //清除所有中断标志位,8-bit
+	DM9000_iow(NSR,0x2c); //清除各种状态标志位
+	DM9000_iow(ISR,0xf); //清除所有中断标志位,8-bit
 
 	//3.8 使能中断
-	DM9000_WRITE_REG(IMR,0x81);//使能指向 SRAM 的指针满后自动返回功能。
-}
-
-
-void xxx(void)
-{
-	DM9000_reset();	
-	DM9000_sendPacket("1",1);	
-
+	DM9000_iow(IMR,0x81);//使能指向 SRAM 的指针满后自动返回功能。
 }
 
 void test_dm9000(void)
 {
 	test_dm9000_ID();
 	dm9000_regs();
-	udelay_ms(5);
+	udelay_ms(20);
 	test_dm9000_ID();
 	dm9000_regs();
+}
+
+void sdbinit(void)
+{
+	DM9000_iow(NCR,0x03); //软件复位，MAC 内部循环反馈
+	udelay_us(20); //延时 10us 以上，等待软件复位完成
+	DM9000_iow(NCR,0x00); //复位完成，设置正常工作模式
+	DM9000_iow(NCR,0x03); //第二次软件复位。确保软件复位完全成功
+	udelay_us(20);
+	DM9000_iow(NCR,0x00);
+	DM9000_iow(IMR,0x80);//使能指向 SRAM 的指针的自动返回功能
+	DM9000_iow(NSR,0x2c); //清除各种状态标志位
+	DM9000_iow(ISR,0xbf); //清除所有中断标志位,8-bit
+	DM9000_iow(RCR,0x39);//接收控制
+	DM9000_iow(TCR,0x00);//发送控制
+	DM9000_iow(BPTR,0x3f);//设置 RX 的最低阀值，小于将产生拥塞
+	DM9000_iow(FCTR,0x00);//接收 FIFO 门限 3K，8K
+	DM9000_iow(FCR,0xff);//启动一些控制功能
+	DM9000_iow(SMCR,0x00);//未启动特殊模式
 }
 
