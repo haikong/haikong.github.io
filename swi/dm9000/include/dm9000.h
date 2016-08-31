@@ -28,7 +28,8 @@
 #define EPDRH		0x0e			//EEPROM & PHY High Byte Data Register
 #define WCR			0x0f			//Wake Up Control Register
 
-#define PAR			0x10			//MAC address 6bytes(10h-15h)
+#define PAR			0x10			//Physical Address Register
+#define MAR			0x16			//Multicast Address Register
 #define GPCR		0x1e			//General Purpose Control Register
 #define GPR			0x1f			//General Purpose Register
 
@@ -60,6 +61,56 @@
 #define NCR_LBK_INT_MAC		(1<<1)
 #define NCR_LBK_INT_PHY		(2<<1)
 #define NCR_RST				(1<<0)
+/*BPTR setting*/
+#define BPTR_BPHW(x)		((x) << 4)
+#define BPTR_JPT_200US		(0x07)
+#define BPTR_JPT_600US		(0x0f)
+/*FCTR setting*/
+#define FCTR_HWOT(ot)		(( ot & 0xf ) << 4 )
+#define FCTR_LWOT(ot)		( ot & 0xf )
+/*NSR setting*/
+#define NSR_SPEED		(1<<7)
+#define NSR_LINKST		(1<<6)
+#define NSR_WAKEST		(1<<5)
+#define NSR_TX2END		(1<<3)
+#define NSR_TX1END		(1<<2)
+#define NSR_RXOV		(1<<1)
+/*TCR setting*/
+#define TCR_TJDIS		(1<<6)
+#define TCR_EXCECM		(1<<5)
+#define TCR_PAD_DIS2	(1<<4)
+#define TCR_CRC_DIS2	(1<<3)
+#define TCR_PAD_DIS1	(1<<2)
+#define TCR_CRC_DIS1	(1<<1)
+#define TCR_TXREQ		(1<<0)
+/*TSR setting*/
+#define TSR_TJTO		(1<<7)
+#define TSR_LC			(1<<6)
+#define TSR_NC			(1<<5)
+#define TSR_LCOL		(1<<4)
+#define TSR_COL			(1<<3)
+#define TSR_EC			(1<<2)
+/*ISR setting*/
+#define ISR_ROOS		(1<<3)
+#define ISR_ROS			(1<<2)
+#define ISR_PTS			(1<<1)
+#define ISR_PRS			(1<<0)
+/*RCR setting*/
+#define RCR_WTDIS		(1<<6)
+#define RCR_DIS_LONG	(1<<5)
+#define RCR_DIS_CRC		(1<<4)
+#define RCR_ALL			(1<<3)
+#define RCR_RUNT		(1<<2)
+#define RCR_PRMSC		(1<<1)
+#define RCR_RXEN		(1<<0)
+/*IMR setting*/
+#define IMR_PAR			(1<<7)
+#define IMR_ROOM		(1<<3)
+#define IMR_ROM			(1<<2)
+#define IMR_PTM			(1<<1)
+#define IMR_PRM			(1<<0)
+/* PHY address 0x01 */
+#define PHY				0x40			
 
 /*dm9000 register control command*/
 #define DM9000_outb(d,r) writeb(d, (volatile UINT8 *)(r))
@@ -70,7 +121,7 @@
 #define DM9000_inl(r) readl((volatile UINT32 *)(r))
 /*dm9000 function declarations*/
 void test_dm9000( void );
-void DM9000_Init(void);
+int DM9000_Init(void);
 void DM9000_sendPacket(char* data_src, unsigned int length );
 void inline DM9000_reset( void );
 int dm9000_revPacket( unsigned char* data_src );

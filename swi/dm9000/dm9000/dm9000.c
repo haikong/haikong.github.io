@@ -22,7 +22,7 @@ static unsigned char mac_addr[6] = {0xaa,0xbb,0xcc,0xdd,0xee,0xff};
     修改内容   : 新生成函数
 
 *****************************************************************************/
-static void inline DM9000_iow(unsigned char reg,char data )
+static void inline DM9000_iow(unsigned long reg,char data )
 {
 	DM9000_outb(reg,DM9000_CMD_BASE);
 	DM9000_outb(data,DM9000_DAT_BASE);
@@ -43,7 +43,7 @@ static void inline DM9000_iow(unsigned char reg,char data )
     修改内容   : 新生成函数
 
 *****************************************************************************/
-static unsigned char inline DM9000_ior(unsigned char reg )
+static unsigned char inline DM9000_ior(unsigned long reg )
 {
     DM9000_outb(reg,DM9000_CMD_BASE);
 	return DM9000_inb(DM9000_DAT_BASE);
@@ -231,11 +231,11 @@ void DM9000_sendPacket(char* data_src, unsigned int length )
 	DM9000_iow(TXPLH,(len >> 8) & 0xff);
 	DM9000_iow(TXPLL,len  & 0xff);
 	//writing the data to TX_SRAM register , using MWCMD,for network endian
-	dm9000_io_outb(DM9000_CMD_BASE,MWCMD);
+	DM9000_iow(DM9000_CMD_BASE,MWCMD);
 	for(i = 0;i < len;i +=2)
 	{
 		udelay_us(2);
-		dm9000_io_outb(DM9000_DAT_BASE,data_src[i] | (data_src[i + 1] << 8));	
+		DM9000_iow(DM9000_DAT_BASE,data_src[i] | (data_src[i + 1] << 8));	
 	}
 	//setting the TCR and sending data to the network
 	DM9000_iow(TCR,0x1);
@@ -304,13 +304,13 @@ int dm9000_revPacket( unsigned char* data_src )
 	 if(RX_First_byte == 0x01)
 	 {
 	 	unsigned char io_mode = DM9000_ior(ISR)>>6;
-		dm9000_io_outb(DM9000_CMD_BASE,MRCMD); //将 Memory Write CMD 发送到 ADD 上
+		DM9000_iow(DM9000_CMD_BASE,MRCMD); //将 Memory Write CMD 发送到 ADD 上
 	
 	 	if(io_mode == 0)//IO word mode
 	 	{
-	 		RX_First_byte = dm9000_io_inb(DM9000_DAT_BASE);//读取接收状态寄存器的值
+	 		RX_First_byte = DM9000_ior(DM9000_DAT_BASE);//读取接收状态寄存器的值
  			printf("\r\nRX_First_byte = %d\r\nRX_status = %d\r\n",RX_First_byte&0x00ff,(RX_status>>8)&0x00ff);
-			RX_length = dm9000_io_inb(DM9000_DAT_BASE);//读取接收状态寄存器的值
+			RX_length = DM9000_ior(DM9000_DAT_BASE);//读取接收状态寄存器的值
 			printf("\r\nRX_length = %d\r\n",RX_length);
 		}
 		else if(io_mode == 1)//IO dword mode
@@ -325,7 +325,7 @@ int dm9000_revPacket( unsigned char* data_src )
 		//读取接收的数据包
 		for(i=0;i<RX_length;i=i+2)
 		{
-			data_temp = dm9000_io_inb(DM9000_DAT_BASE);//读取到的 16bit 的数据
+			data_temp = DM9000_ior(DM9000_DAT_BASE);//读取到的 16bit 的数据
 			data_src[i] = data_temp&0x00ff;
 			printf(" %x",data_src[i]);
 			data_src[i+1] = (data_temp >> 8) & 0xff;
@@ -396,6 +396,39 @@ static void dm9000_gpio_init( void )
 	//register EINT7 ISR
 	register_extern_int(EXTERNIRQ7,dm9000_isr);
 }
+
+/*****************************************************************************
+ 函 数 名  : dm9000_phy_read
+ 功能描述  : Read a word from phyxcer
+ 输入参数  : int reg
+ 输出参数  : 无
+ 返 回 值  : phy read data
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年8月31日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static unsigned short dm9000_phy_read( int reg )
+{
+	unsigned short val;
+
+	/* Fill the phyxcer register into REG_0C */
+	DM9000_iow(EPAR, PHY | reg);
+	DM9000_iow(EPCR, 0xc);	/* Issue phyxcer read command */
+	udelay_us(100);			/* Wait read complete */
+	DM9000_iow(EPCR, 0x0);	/* Clear phyxcer read command */
+	val = (DM9000_ior(EPDRH) << 8) | DM9000_ior(EPDRL);
+
+	/* The read data keeps on REG_0D & REG_0E */
+	printf("dm9000_phy_read(0x%x): 0x%x\n", reg, val);
+	return val;
+   
+}
+
 /*****************************************************************************
  函 数 名  : static int dm9000_probe(void)
  功能描述  : Search DM9000 board, allocate space and register it
@@ -443,7 +476,7 @@ static int dm9000_probe(void)
 	//在设置时，有些地方需要重复设置。
  输入参数  : void
  输出参数  : 无
- 返 回 值  : void
+ 返 回 值  : 0:ok;-1:error
  调用函数  : 
  被调函数  : 
  
@@ -454,11 +487,17 @@ static int dm9000_probe(void)
 
 *****************************************************************************/
 
-void DM9000_Init(void)
+int DM9000_Init(void)
 {
-	unsigned char i;
+	unsigned char i,io_mode,oft,lnk;
 	//setting dm9000 ISR
 	dm9000_gpio_init();
+	/* RESET device */
+	DM9000_reset();
+	if(dm9000_probe() < 0)
+		return -1;	
+
+#ifdef _DM9000	
 	//3.配置寄存器
 	//3.1.激活内部 PHY
 	DM9000_iow(GPCR,0x01);//设置 GPCR bit[0]=1，使 DM9000 为 GPIO0 为输出
@@ -475,7 +514,6 @@ void DM9000_Init(void)
 
 	//3.3 使能中断
 	DM9000_iow(IMR,0x80);//使能指向 SRAM 的指针的自动返回功能
-
 
 	//3.4 清除原网络和中断状态
 	DM9000_iow(NSR,0x2c); //清除各种状态标志位
@@ -501,13 +539,84 @@ void DM9000_Init(void)
 
 	//3.8 使能中断
 	DM9000_iow(IMR,0x81);//使能指向 SRAM 的指针满后自动返回功能。
+	return 0;
+#else
+	/* Auto-detect 8/16/32 bit mode, ISR Bit 6+7 indicate bus width */
+	io_mode = DM9000_ior(ISR) >> 6;
+	printf("The dm9000 bus width is %d bit.\n",io_mode);
+	/* Program operating register, only internal phy supported */
+	DM9000_iow(NCR, 0x0);
+	/* TX Polling clear */
+	DM9000_iow(TCR, 0);
+	/* Less 3Kb, 200us */
+	DM9000_iow(BPTR, BPTR_BPHW(3) | BPTR_JPT_600US);
+	/* Flow Control : High/Low Water */
+	DM9000_iow(FCTR, FCTR_HWOT(3) | FCTR_LWOT(8));
+	/* SH FIXME: This looks strange! Flow Control */
+	DM9000_iow(FCR, 0x0);
+	/* Special Mode */
+	DM9000_iow(SMCR, 0);
+	/* clear TX status */
+	DM9000_iow(NSR, NSR_WAKEST | NSR_TX2END | NSR_TX1END);
+	/* Clear interrupt status */
+	DM9000_iow(ISR, ISR_ROOS | ISR_ROS | ISR_PTS | ISR_PRS);
+
+	printf("MAC: %pM\n", mac_addr);
+
+	/* fill device MAC address registers */
+	for (i = 0, oft = PAR; i < 6; i++, oft++)
+		DM9000_iow(oft, mac_addr[i]);
+	for (i = 0, oft = MAR; i < 8; i++, oft++)
+		DM9000_iow(oft, 0xff);
+
+	/* read back mac, just to be sure */
+	for (i = 0, oft = 0x10; i < 6; i++, oft++)
+		printf("%02x:", DM9000_ior(oft));
+	printf("\n");
+
+	/* Activate DM9000 */
+	/* RX enable */
+	DM9000_iow(RCR, RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN);
+	/* Enable TX/RX interrupt mask */
+	DM9000_iow(IMR, IMR_PAR);
+
+	i = 0;
+	while (!(dm9000_phy_read(1) & 0x20)) {	/* autonegation complete bit */
+		udelay_ms(100);
+		i++;
+		if (i == 10000) {
+			printf("could not establish link\n");
+			return 0;
+		}
+	}
+
+	/* see what we've got */
+	lnk = dm9000_phy_read(17) >> 12;
+	printf("operating at ");
+	switch (lnk) {
+	case 1:
+		printf("10M half duplex ");
+		break;
+	case 2:
+		printf("10M full duplex ");
+		break;
+	case 4:
+		printf("100M half duplex ");
+		break;
+	case 8:
+		printf("100M full duplex ");
+		break;
+	default:
+		printf("unknown: %d ", lnk);
+		break;
+	}
+	printf("mode\n");
+	return 0;	
+#endif	
 }
 
 void test_dm9000(void)
 {
-	test_dm9000_ID();
-	dm9000_regs();
-	udelay_ms(20);
 	test_dm9000_ID();
 	dm9000_regs();
 }
