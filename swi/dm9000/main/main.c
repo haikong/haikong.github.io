@@ -131,7 +131,6 @@ void adc_test(void)
 /*main*/
 int main(int argc,char** argv)
 {
-	int i;
 	//swi_test();
     clean_bss();	
     uart0_init();
@@ -143,11 +142,8 @@ int main(int argc,char** argv)
 	#endif
 	if(DM9000_Init() < 0)
 		return -1;
-	for(i = 0;i < 10;i++)
-	{
-		wait(50000);
-		test_dm9000();
-	}
+	wait(50000);
+	test_dm9000();
 	arp_test();
 	while(1);
 	return 0;

@@ -45,8 +45,8 @@ void memsetup(void)
 	p[2]	= 0x00000700;   //BANKCON1
 	p[3]	= 0x00000700;   //BANKCON2
 	p[4]	= 0x00000700;   //BANKCON3
-	p[5]	= 0x00001f7c;   //BANKCON4
-	//p[5]	= 0x00000700;   //BANKCON4
+	//p[5]	= 0x00001f7c;   //BANKCON4
+	p[5]	= 0x00000700;   //BANKCON4
 	p[6]	= 0x00000700;   //BANKCON5
 	p[7]	= 0x00018005;   //BANKCON6
 	p[8]	= 0x00018005;   //BANKCON7

@@ -4,7 +4,7 @@
 #include <intirq.h>
 #include <test.h>
 
-static unsigned char mac_addr[6] = {0xaa,0xbb,0xcc,0xdd,0xee,0xff};
+static unsigned char mac_addr[6] __attribute__((__aligned__(4)))= {0x1a,0x2b,0x3c,0x4d,0x5e,0x6f};
 
 /*****************************************************************************
  º¯ Êý Ãû  : DM9000_iow
@@ -173,7 +173,7 @@ static void udelay_ms(unsigned int ms)
 void inline DM9000_reset( void )
 {
 
-	printf("resetting DM9000\n");
+	printf("resetting DM9000\n\t");
 
 	/* DEBUG: Make all GPIO0 outputs, all others inputs */
 	DM9000_iow(GPCR, GPCR_GPIO0_OUT);
@@ -183,7 +183,7 @@ void inline DM9000_reset( void )
 	DM9000_iow(NCR, (NCR_LBK_INT_MAC | NCR_RST));
 
 	do {
-		printf("resetting the DM9000, 1st reset\n");
+		printf("resetting the DM9000, 1st reset\n\t");
 		udelay_us(25); /* Wait at least 20 us */
 	} while (DM9000_ior(NCR) & 1);
 
@@ -191,14 +191,14 @@ void inline DM9000_reset( void )
 	DM9000_iow(NCR, (NCR_LBK_INT_MAC | NCR_RST)); /* Issue a second reset */
 
 	do {
-		printf("resetting the DM9000, 2nd reset\n");
+		printf("resetting the DM9000, 2nd reset\n\t");
 		udelay_us(25); /* Wait at least 20 us */
 	} while (DM9000_ior(NCR) & 1);
 
 	/* Check whether the ethernet controller is present */
 	if ((DM9000_ior(PIDL) != 0x0) ||
 		(DM9000_ior(PIDH) != 0x90))
-		printf("ERROR: resetting DM9000 -> not responding\n");
+		printf("ERROR: resetting DM9000 -> not responding\nt");
   
 }
 
@@ -424,7 +424,7 @@ static unsigned short dm9000_phy_read( int reg )
 	val = (DM9000_ior(EPDRH) << 8) | DM9000_ior(EPDRL);
 
 	/* The read data keeps on REG_0D & REG_0E */
-	printf("dm9000_phy_read(0x%x): 0x%x\n", reg, val);
+	printf("dm9000_phy_read(0x%x): 0x%x\n\t", reg, val);
 	return val;
    
 }
@@ -452,12 +452,10 @@ static int dm9000_probe(void)
 	id_val |= DM9000_ior(PIDL) << 16;
 	id_val |= DM9000_ior(PIDH) << 24;
 	if (id_val == DM9000_ID) {
-		printf("dm9000 i/o: 0x%x, id: 0x%x \n", DM9000_CMD_BASE,
-		       id_val);
+		printf("dm9000 i/o: 0x%x, id: 0x%x \n\t", DM9000_CMD_BASE,id_val);
 		return 0;
 	} else {
-		printf("dm9000 not found at 0x%08x id: 0x%08x\n",
-		       DM9000_CMD_BASE, id_val);
+		printf("dm9000 not found at 0x%08x id: 0x%08x\n\t",DM9000_CMD_BASE, id_val);
 		return -1;
 	}
 }
@@ -543,7 +541,7 @@ int DM9000_Init(void)
 #else
 	/* Auto-detect 8/16/32 bit mode, ISR Bit 6+7 indicate bus width */
 	io_mode = DM9000_ior(ISR) >> 6;
-	printf("The dm9000 bus width is %d bit.\n",io_mode);
+	printf("The dm9000 bus width is %d bit.\n\t",io_mode);
 	/* Program operating register, only internal phy supported */
 	DM9000_iow(NCR, 0x0);
 	/* TX Polling clear */
@@ -561,8 +559,6 @@ int DM9000_Init(void)
 	/* Clear interrupt status */
 	DM9000_iow(ISR, ISR_ROOS | ISR_ROS | ISR_PTS | ISR_PRS);
 
-	printf("MAC: %pM\n", mac_addr);
-
 	/* fill device MAC address registers */
 	for (i = 0, oft = PAR; i < 6; i++, oft++)
 		DM9000_iow(oft, mac_addr[i]);
@@ -570,9 +566,9 @@ int DM9000_Init(void)
 		DM9000_iow(oft, 0xff);
 
 	/* read back mac, just to be sure */
-	for (i = 0, oft = 0x10; i < 6; i++, oft++)
+	for (i = 0, oft = PAR; i < 6; i++, oft++)
 		printf("%02x:", DM9000_ior(oft));
-	printf("\n");
+	printf("\n\t");
 
 	/* Activate DM9000 */
 	/* RX enable */
@@ -582,10 +578,10 @@ int DM9000_Init(void)
 
 	i = 0;
 	while (!(dm9000_phy_read(1) & 0x20)) {	/* autonegation complete bit */
-		udelay_ms(100);
+		udelay_ms(10);
 		i++;
 		if (i == 10000) {
-			printf("could not establish link\n");
+			printf("could not establish link\n\t");
 			return 0;
 		}
 	}
@@ -610,15 +606,28 @@ int DM9000_Init(void)
 		printf("unknown: %d ", lnk);
 		break;
 	}
-	printf("mode\n");
+	printf("mode\n\t");
 	return 0;	
 #endif	
 }
 
 void test_dm9000(void)
 {
+	int i,oft;
 	test_dm9000_ID();
 	dm9000_regs();
+	
+	/* fill device MAC address registers */
+	for (i = 0, oft = PAR; i < 6; i++, oft++)
+	{
+		DM9000_iow(PAR + i, mac_addr[i]);
+	}
+	for (i = 0, oft = MAR; i < 8; i++, oft++)
+		DM9000_iow(oft, 0xff);
+	/* read back mac, just to be sure */
+	for (i = 0, oft = PAR; i < 6; i++, oft++)
+		printf("%02x:", DM9000_ior(oft));
+	printf("\n\t");	
 }
 
 void sdbinit(void)
