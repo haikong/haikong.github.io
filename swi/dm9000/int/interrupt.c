@@ -18,6 +18,7 @@ static void extern_isr(unsigned int vector)
 	unsigned int int_pend;
 	int_pend = EINTPEND;
 	i = fbit_pend(int_pend);
+	printf("%s-%s-%dline,i = %d\n\t",__FILE__,__FUNCTION__,__LINE__,i);
 	if(i > 31)
 		Dummy_isr(vector);
 	else

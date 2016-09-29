@@ -14,14 +14,18 @@ extern "C"{
 #define GPB8_out        (1<<(8*2))
 
 /*
- * K1-K4对应GPG11、GPG3、GPF2、GPF0
+ * K1-K4对应GPF1,GPF4、GPF2、GPF0
  */
-#define GPG11_in    ~(3<<(11*2))
-#define GPG3_in     ~(3<<(3*2))
+#define GPF4_in    ~(3<<(4*2))
 #define GPF2_in     ~(3<<(2*2))
+#define GPF1_in     ~(3<<(1*2))
 #define GPF0_in     ~(3<<(0*2))
 
 void init_led(void);
+void key_init( unsigned char key,unsigned char mode );
+void KeyINT2_Handle(unsigned int vec_num);
+void KeyINT3_Handle(unsigned int vec_num);
+void KeyINT4_Handle(unsigned int vec_num);
 
 #ifdef	__cplusplus
 }

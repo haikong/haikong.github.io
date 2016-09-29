@@ -140,11 +140,15 @@ int main(int argc,char** argv)
 	timer_init();					//invoking timer0 initialize and enable timer0 handle	
 	register_interrupt(ISR_TIMER0_OFT,Timer0_Handle);
 	#endif
-	if(DM9000_Init() < 0)
+	if(DM9000_Init(NULL) < 0)
 		return -1;
+	/*register extern4*/	
+	register_extern_int(EXTERNIRQ4,KeyINT2_Handle);	
 	wait(50000);
 	test_dm9000();
 	arp_test();
+	wait(500000);	
+	test_dm9000();
 	while(1);
 	return 0;
 }

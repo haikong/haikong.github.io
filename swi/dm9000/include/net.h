@@ -1,5 +1,6 @@
 #ifndef __NET_H__
 #define __NET_H__
+#include <types.h>
 /**
  * enum sock_type - Socket types
  * @SOCK_STREAM: stream (connection) socket
@@ -15,6 +16,7 @@
  * grep ARCH_HAS_SOCKET_TYPE include/asm-* /socket.h, at least MIPS
  * overrides this enum for binary compat reasons.
  */
+/*sock_type*/
 typedef enum sock_type {
 	SOCK_STREAM	= 1,
 	SOCK_DGRAM	= 2,
@@ -25,6 +27,12 @@ typedef enum sock_type {
 	SOCK_PACKET	= 10,
 }E_NET_PROTO;
 
+//ethnetwork
+enum eth_state_t {
+	ETH_STATE_INIT,
+	ETH_STATE_PASSIVE,
+	ETH_STATE_ACTIVE
+};
 
 //以太网头部结构
 typedef struct _eth_hdr {
@@ -111,6 +119,45 @@ typedef enum _mac_proto{
 	ETHTYPE_IP,	
 }e_MAC_PROTO;
 
+/*ethwork structure*/
+struct eth_device {
+	char name[16];
+	unsigned char enetaddr[6];
+	int iobase;
+	int state;
+
+	int  (*init) (struct eth_device *);
+	int  (*send) (struct eth_device *, void *packet,unsigned int length);
+	int  (*recv) (struct eth_device *netdev, unsigned char* data_src );
+	void (*halt) (struct eth_device *);
+#ifdef CONFIG_MCAST_TFTP
+	int (*mcast) (struct eth_device *, UINT32 ip, UINT8 set);
+#endif
+	int  (*write_hwaddr) (struct eth_device *);
+	struct eth_device *next;
+	int index;
+	void *priv;
+};
+/* Structure/enum declaration ------------------------------- */
+typedef struct board_info {
+	UINT32 	runt_length_counter;	/* counter: RX length < 64byte */
+	UINT32 	long_length_counter;	/* counter: RX length > 1514byte */
+	UINT32 	reset_counter;			/* counter: RESET */
+	UINT32 	reset_tx_timeout;		/* RESET caused by TX Timeout */
+	UINT32 	reset_rx_status;		/* RESET caused by RX Statsus wrong */
+	UINT16 	tx_pkt_cnt;
+	UINT16 	queue_start_addr;
+	UINT16 	dbug_cnt;
+	UINT8 	phy_addr;
+	UINT8 	device_wait_reset;	/* device state */
+	unsigned char srom[128];
+	void (*outblk)(volatile void *data_ptr, int count);
+	void (*inblk)(void *data_ptr, int count);
+	void (*rx_status)(UINT16 *RxStatus, UINT16 *RxLen);
+	struct eth_device netdev;
+}t_board_info,*pt_board_info;
+
+/*host to network endian*/
 #define htons(x) ((unsigned short)(\
 	(((unsigned short)(x) & (unsigned short)0x00ffU) << 8) |\
 	(((unsigned short)(x) & (unsigned short)0xff00U) >> 8)))
@@ -123,6 +170,12 @@ typedef enum _mac_proto{
 
 //calculate the check sum
 unsigned short cal_chksum(unsigned short *addr,int len);
+int eth_register(struct eth_device *dev);
+int eth_unregister(struct eth_device *dev);
+int  eth_init (struct eth_device * edev);
+int  eth_send(struct eth_device *edev, void *packet,unsigned int length);
+int  eth_recv(struct eth_device *netdev, unsigned char* data_src );
+void eth_halt(struct eth_device *edev);
 
 #endif
 

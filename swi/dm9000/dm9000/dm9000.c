@@ -3,8 +3,274 @@
 #include <stdio.h>
 #include <intirq.h>
 #include <test.h>
+#include <miscellaneous.h>
+#include <net.h>
+#include <glob.h>
+#include <bsp.h>
+/*mac address*/
+static unsigned char mac_addr[6] __attribute__ ((__aligned__(4)))= {0x1a,0x2b,0x3c,0x4d,0x5e,0x6f};
+/*dm9000 board infomation*/
+static t_board_info dm9000_info;
+/*****************************************************************************
+ 函 数 名  : void  udelay_us(int us)
+ 功能描述  : just for udelay some times about xx us,FCK = 200MHZ = 5ns.
+ 输入参数  : us
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年4月5日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
 
-static unsigned char mac_addr[6] __attribute__((__aligned__(4)))= {0x1a,0x2b,0x3c,0x4d,0x5e,0x6f};
+*****************************************************************************/
+static void udelay_us(unsigned int us)
+{
+    int i;
+	while(us--)
+		for(i = 0 ;i < 190;i++);		
+}
+/*****************************************************************************
+ 函 数 名  : udelay_ms
+ 功能描述  : delay some ms
+ 输入参数  : unsigned int ms  
+ 输出参数  : 无
+ 返 回 值  : static
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月21日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void udelay_ms(unsigned int ms)
+{
+    int i;
+	while(ms--)
+		for(i = 0 ;i < 200000;i++);		
+}
+
+/*****************************************************************************
+ 函 数 名  : dm9000_outblk_8bit
+ 功能描述  : dm9000按字节输出
+ 输入参数  : volatile void *data_ptr
+             int count
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月17日
+    作    者   : haikong
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_outblk_8bit( volatile void *data_ptr, int count )
+{
+	int i;
+	for (i = 0; i < count; i++)
+		DM9000_outb((((unsigned char*) data_ptr)[i] & 0xff), DM9000_DAT_BASE);    
+}
+/*****************************************************************************
+ 函 数 名  : dm9000_outblk_16bit
+ 功能描述  : dm9000按字输出
+ 输入参数  : volatile void *data_ptr
+             int count
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月17日
+    作    者   : haikong
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_outblk_16bit( volatile void *data_ptr, int count )
+{
+	int i;
+	unsigned int tmplen = (count + 1) / 2;
+	
+	for (i = 0; i < tmplen; i++)
+		DM9000_outw((((unsigned short*) data_ptr)[i]), DM9000_DAT_BASE);    
+}
+
+/*****************************************************************************
+ 函 数 名  : dm9000_outblk_32bit
+ 功能描述  : dm9000按2字输出
+ 输入参数  : volatile void *data_ptr
+             int count
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月17日
+    作    者   : haikong
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_outblk_32bit( volatile void *data_ptr, int count )
+{
+	int i;
+	unsigned int tmplen = (count + 3) / 4;
+	
+	for (i = 0; i < tmplen; i++)
+		DM9000_outl((((unsigned int*) data_ptr)[i]), DM9000_DAT_BASE);    
+}
+/*****************************************************************************
+ 函 数 名  : dm9000_inblk_8bit
+ 功能描述  : dm9000按字节输入
+ 输入参数  : volatile void *data_ptr
+             int count
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月17日
+    作    者   : haikong
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_inblk_8bit(void *data_ptr, int count)
+{
+	int i;
+	for (i = 0; i < count; i++)
+		((UINT8*) data_ptr)[i] = DM9000_inb(DM9000_DAT_BASE);
+}
+/*****************************************************************************
+ 函 数 名  : dm9000_inblk_16bit
+ 功能描述  : dm9000按半字输入
+ 输入参数  : volatile void *data_ptr
+             int count
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月17日
+    作    者   : haikong
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_inblk_16bit(void *data_ptr, int count)
+{
+	int i;
+	UINT32 tmplen = (count + 1) / 2;
+
+	for (i = 0; i < tmplen; i++)
+		((UINT16 *) data_ptr)[i] = DM9000_inw(DM9000_DAT_BASE);
+}
+/*****************************************************************************
+ 函 数 名  : dm9000_inblk_32bit
+ 功能描述  : dm9000按字输入
+ 输入参数  : volatile void *data_ptr
+             int count
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月17日
+    作    者   : haikong
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_inblk_32bit(void *data_ptr, int count)
+{
+	int i;
+	UINT32 tmplen = (count + 3) / 4;
+
+	for (i = 0; i < tmplen; i++)
+		((UINT32 *) data_ptr)[i] = DM9000_inl(DM9000_DAT_BASE);
+}
+/*****************************************************************************
+ 函 数 名  : dm9000_rx_status_8bit
+ 功能描述  : dm9000按字节读取状态字
+ 输入参数  : UINT16 *RxStatus :状态字指针
+             UINT16 *RxLen	  :长度
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月17日
+    作    者   : haikong
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_rx_status_8bit(UINT16 *RxStatus, UINT16 *RxLen)
+{
+	DM9000_outb(MRCMD, DM9000_CMD_BASE);
+
+	*RxStatus =
+	    __le16_to_cpu(DM9000_inb(DM9000_DAT_BASE) +
+			  (DM9000_inb(DM9000_DAT_BASE) << 8));
+	*RxLen =
+	    __le16_to_cpu(DM9000_inb(DM9000_DAT_BASE) +
+			  (DM9000_inb(DM9000_DAT_BASE) << 8));
+}
+/*****************************************************************************
+ 函 数 名  : dm9000_rx_status_16bit
+ 功能描述  : dm9000按半字读取状态字
+ 输入参数  : UINT16 *RxStatus :状态字指针
+             UINT16 *RxLen	  :长度
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月17日
+    作    者   : haikong
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_rx_status_16bit(UINT16 *RxStatus, UINT16 *RxLen)
+{
+	DM9000_outb(MRCMD, DM9000_CMD_BASE);
+
+	*RxStatus =__le16_to_cpu(DM9000_inw(DM9000_DAT_BASE));
+	*RxLen =__le16_to_cpu(DM9000_inw(DM9000_DAT_BASE));
+}
+/*****************************************************************************
+ 函 数 名  : dm9000_rx_status_32bit
+ 功能描述  : dm9000按半读取状态字
+ 输入参数  : UINT16 *RxStatus :状态字指针
+             UINT16 *RxLen	  :长度
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月17日
+    作    者   : haikong
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_rx_status_32bit(UINT16 *RxStatus, UINT16 *RxLen)
+{
+	UINT32 tmpdata;
+
+	DM9000_outb(MRCMD, DM9000_CMD_BASE);
+	tmpdata = DM9000_inl(DM9000_DAT_BASE);
+
+	*RxStatus =__le16_to_cpu(tmpdata);
+	*RxLen =__le16_to_cpu(tmpdata >> 16);
+}
 
 /*****************************************************************************
  函 数 名  : DM9000_iow
@@ -47,6 +313,104 @@ static unsigned char inline DM9000_ior(unsigned long reg )
 {
     DM9000_outb(reg,DM9000_CMD_BASE);
 	return DM9000_inb(DM9000_DAT_BASE);
+}
+
+/*****************************************************************************
+ 函 数 名  : DM9000_iows
+ 功能描述  : setting dm9000 registers
+ 输入参数  : reg
+             data
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年4月11日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void inline DM9000_iows(unsigned long reg,short data )
+{
+	DM9000_outw(reg,DM9000_CMD_BASE);
+	DM9000_outw(data,DM9000_DAT_BASE);
+}
+/*****************************************************************************
+ 函 数 名  : dm9000_read_srom_word
+ 功能描述  : Read a word data from SROM
+ 输入参数  : int offset  
+             UINT8*to    
+ 输出参数  : 无
+ 返 回 值  : 
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月21日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+#if !defined(CONFIG_DM9000_NO_SROM)
+void dm9000_read_srom_word(int offset, UINT8*to)
+{
+	DM9000_iow(EPAR, offset);
+	DM9000_iow(EPCR, 0x4);
+	udelay_us(8000);
+	DM9000_iow(EPCR, 0x0);
+	to[0] = DM9000_ior(EPDRL);
+	to[1] = DM9000_ior(EPDRH);
+}
+/*****************************************************************************
+ 函 数 名  : dm9000_write_srom_word
+ 功能描述  : write a word data from SROM
+ 输入参数  : int offset  
+             UINT8*to    
+ 输出参数  : 无
+ 返 回 值  : 
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月21日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+void dm9000_write_srom_word(int offset, UINT16 val)
+{
+	DM9000_iow(EPAR, offset);
+	DM9000_iow(EPDRH, ((val >> 8) & 0xff));
+	DM9000_iow(EPDRL, (val & 0xff));
+	DM9000_iow(EPCR, 0x12);
+	udelay_us(8000);
+	DM9000_iow(EPCR, 0);
+}
+#endif
+
+/*****************************************************************************
+ 函 数 名  : dm9000_get_enetaddr
+ 功能描述  : get dm9000 mac addree 
+ 输入参数  : struct eth_device *dev  
+ 输出参数  : 无
+ 返 回 值  : static
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月21日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_get_enetaddr(struct eth_device *dev)
+{
+#if !defined(CONFIG_DM9000_NO_SROM)
+	int i;
+	for (i = 0; i < 3; i++)
+		dm9000_read_srom_word(i, dev->enetaddr + (2 * i));
+#endif
 }
 
 /*****************************************************************************
@@ -126,36 +490,6 @@ static void dm9000_regs( void )
 }
 
 /*****************************************************************************
- 函 数 名  : void  udelay_us(int us)
- 功能描述  : just for udelay some times about xx us,FCK = 200MHZ = 5ns.
- 输入参数  : us
- 输出参数  : 无
- 返 回 值  : void
- 调用函数  : 
- 被调函数  : 
- 
- 修改历史      :
-  1.日    期   : 2016年4月5日
-    作    者   : QSWWD
-    修改内容   : 新生成函数
-
-*****************************************************************************/
-static void udelay_us(unsigned int us)
-{
-    int i;
-	while(us--)
-		for(i = 0 ;i < 190;i++);		
-}
-
-
-static void udelay_ms(unsigned int ms)
-{
-    int i;
-	while(ms--)
-		for(i = 0 ;i < 200000;i++);		
-}
-
-/*****************************************************************************
  函 数 名  : DM9000_reset
  功能描述  : dm9000 reset function
  输入参数  : void
@@ -218,25 +552,27 @@ void inline DM9000_reset( void )
     修改内容   : 新生成函数
 
 *****************************************************************************/
-void DM9000_sendPacket(char* data_src, unsigned int length )
+int DM9000_sendPacket(struct eth_device *netdev,void* data_src, unsigned int length )
 {
     unsigned int len;
 	int i;
 	unsigned char c_tmp;
-
-	//diable the dm9000 interrput
-	DM9000_iow(IMR,0x80);
-	//write the length to TXPLH and TXPLL registers
+	char* src = data_src;
+	DM9000_iow(ISR, IMR_PTM); /* Clear Tx bit in ISR */
 	len = length;
-	DM9000_iow(TXPLH,(len >> 8) & 0xff);
-	DM9000_iow(TXPLL,len  & 0xff);
 	//writing the data to TX_SRAM register , using MWCMD,for network endian
-	DM9000_iow(DM9000_CMD_BASE,MWCMD);
+	//DM9000_iows(DM9000_CMD_BASE,MWCMD);
+	//dm9000_outblk_16bit(data_src,length);
+	#if 1
 	for(i = 0;i < len;i +=2)
 	{
 		udelay_us(2);
-		DM9000_iow(DM9000_DAT_BASE,data_src[i] | (data_src[i + 1] << 8));	
+		DM9000_iows(DM9000_DAT_BASE,src[i] | (src[i + 1] << 8));	
 	}
+	#endif
+	//write the length to TXPLH and TXPLL registers	
+	DM9000_iow(TXPLH,(len >> 8) & 0xff);
+	DM9000_iow(TXPLL,len  & 0xff);	
 	//setting the TCR and sending data to the network
 	DM9000_iow(TCR,0x1);
 	//waiting until the data sending complete
@@ -266,6 +602,7 @@ void DM9000_sendPacket(char* data_src, unsigned int length )
 	DM9000_iow(NSR,0x2c);
 	//enable the dm9000 reciving interrput
 	DM9000_iow(IMR,0x81);
+	return 0;
 }
 
 /*****************************************************************************
@@ -283,7 +620,7 @@ void DM9000_sendPacket(char* data_src, unsigned int length )
     修改内容   : 新生成函数
 
 *****************************************************************************/
-int dm9000_revPacket( unsigned char* data_src )
+int dm9000_revPacket(struct eth_device *netdev, unsigned char* data_src )
 {
 	unsigned char RX_First_byte=0;//RX SRAM 的第一个字节的值
 	unsigned char RX_status=0;//寄存器 RXSR 的值
@@ -339,7 +676,7 @@ int dm9000_revPacket( unsigned char* data_src )
 	 	printf("无数据包\n");
 		//reset dm9000 again
 		DM9000_iow(IMR,0x80);
-		DM9000_Init();
+		DM9000_Init(NULL);
 		DM9000_iow(IMR,0x81);
 	 	return -1;
 	 }
@@ -366,7 +703,8 @@ static void dm9000_isr(unsigned int vector)
 {
 	int i;
 	unsigned char buf[1000];
-	i = dm9000_revPacket(buf);
+	printf("%s-%s-%d\n\t",__FILE__,__FUNCTION__,__LINE__);
+	i = dm9000_revPacket(NULL,buf);
 	if(i >0)
 		arp_process((char*)buf,i);
 }
@@ -389,10 +727,10 @@ static void dm9000_isr(unsigned int vector)
 static void dm9000_gpio_init( void )
 {
     //setting dm9000 extern interrupt
-	GPFCON |= 0x2 << 14;
+	key_init(7,0x2);
 	//setting EINT7 is Rising edge triggered
 	EXTINT0 &=  ~(7 << 28);
-	EXTINT0 |= (HLEVL << 28);
+	EXTINT0 |= (RETIG << 28);
 	//register EINT7 ISR
 	register_extern_int(EXTERNIRQ7,dm9000_isr);
 }
@@ -459,6 +797,60 @@ static int dm9000_probe(void)
 		return -1;
 	}
 }
+/*****************************************************************************
+ 函 数 名  : dm9000_phy_write
+ 功能描述  : Write a word to phyxcer
+ 输入参数  : int reg       
+             UINT16 value  
+ 输出参数  : 无
+ 返 回 值  : static
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月21日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_phy_write(int reg, UINT16 value)
+{
+
+	/* Fill the phyxcer register into REG_0C */
+	DM9000_iow(EPAR, PHY | reg);
+
+	/* Fill the written data into REG_0D & REG_0E */
+	DM9000_iow(EPDRL, (value & 0xff));
+	DM9000_iow(EPDRH, ((value >> 8) & 0xff));
+	DM9000_iow(EPCR, 0xa);	/* Issue phyxcer write command */
+	udelay_us(500);			/* Wait write complete */
+	DM9000_iow(EPCR, 0x0);	/* Clear phyxcer write command */
+	printf("dm9000_phy_write(reg:0x%x, value:0x%x)\n", reg, value);
+}
+
+/*****************************************************************************
+ 函 数 名  : dm9000_halt
+ 功能描述  : Stop the interface.The interface is stopped when it is brought.
+ 输入参数  : struct eth_device *netdev  
+ 输出参数  : 无
+ 返 回 值  : 
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月21日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static void dm9000_halt(struct eth_device *netdev)
+{
+	/* RESET devie */
+	dm9000_phy_write(0, 0x8000);	/* PHY RESET */
+	DM9000_iow(GPR, 0x01);	/* Power-Down PHY */
+	DM9000_iow(IMR, 0x80);	/* Disable all interrupt */
+	DM9000_iow(RCR, 0x00);	/* Disable RX */
+}
 
 /*****************************************************************************
  函 数 名  : dm9000_init
@@ -485,63 +877,45 @@ static int dm9000_probe(void)
 
 *****************************************************************************/
 
-int DM9000_Init(void)
+int DM9000_Init(struct eth_device *dev)
 {
-	unsigned char i,io_mode,oft,lnk;
+	unsigned char i,io_mode,oft,lnk;	
+	struct board_info *db = &dm9000_info;
 	//setting dm9000 ISR
 	dm9000_gpio_init();
 	/* RESET device */
 	DM9000_reset();
 	if(dm9000_probe() < 0)
 		return -1;	
-
-#ifdef _DM9000	
-	//3.配置寄存器
-	//3.1.激活内部 PHY
-	DM9000_iow(GPCR,0x01);//设置 GPCR bit[0]=1，使 DM9000 为 GPIO0 为输出
-	DM9000_iow(GPR,0x00);//GPR bit[0]=0，使 GPIO0 输出低电平以激活内部 PHY
-	udelay_us(20);
-
-	//3.2 软件复位
-	DM9000_iow(NCR,0x03); //软件复位，MAC 内部循环反馈
-	udelay_us(20); //延时 10us 以上，等待软件复位完成
-	DM9000_iow(NCR,0x00); //复位完成，设置正常工作模式
-	DM9000_iow(NCR,0x03); //第二次软件复位。确保软件复位完全成功
-	udelay_us(20);
-	DM9000_iow(NCR,0x00);
-
-	//3.3 使能中断
-	DM9000_iow(IMR,0x80);//使能指向 SRAM 的指针的自动返回功能
-
-	//3.4 清除原网络和中断状态
-	DM9000_iow(NSR,0x2c); //清除各种状态标志位
-	DM9000_iow(ISR,0xf); //清除所有中断标志位,8-bit
-
-	//3.5 对发射和接收进行新的控制
-	// 对中断进行新的控制
-	DM9000_iow(RCR,0x39);//接收控制
-	DM9000_iow(TCR,0x00);//发送控制
-	DM9000_iow(BPTR,0x3f);//设置 RX 的最低阀值，小于将产生拥塞
-	DM9000_iow(FCTR,0x38);//接收 FIFO 门限 3K，8K
-	DM9000_iow(FCR,0xff);//启动一些控制功能
-	DM9000_iow(SMCR,0x00);//未启动特殊模式
-
-	//3.6 设置 MAC 地址
-	for(i=0; i<6; i++){
-		DM9000_iow(PAR+i, mac_addr[i]);
-		udelay_us(1);
-	}		
-	//3.7 清除原网络状态和中断标志位
-	DM9000_iow(NSR,0x2c); //清除各种状态标志位
-	DM9000_iow(ISR,0xf); //清除所有中断标志位,8-bit
-
-	//3.8 使能中断
-	DM9000_iow(IMR,0x81);//使能指向 SRAM 的指针满后自动返回功能。
-	return 0;
-#else
 	/* Auto-detect 8/16/32 bit mode, ISR Bit 6+7 indicate bus width */
 	io_mode = DM9000_ior(ISR) >> 6;
-	printf("The dm9000 bus width is %d bit.\n\t",io_mode);
+	switch(io_mode){
+		case 0x0:  /* 16-bit mode */
+			printf("DM9000: running in 16 bit mode\n");
+			db->outblk    = dm9000_outblk_16bit;
+			db->inblk     = dm9000_inblk_16bit;
+			db->rx_status = dm9000_rx_status_16bit;
+			break;
+		case 0x01:  /* 32-bit mode */
+			printf("DM9000: running in 32 bit mode\n");
+			db->outblk    = dm9000_outblk_32bit;
+			db->inblk     = dm9000_inblk_32bit;
+			db->rx_status = dm9000_rx_status_32bit;
+			break;
+		case 0x02: /* 8 bit mode */
+			printf("DM9000: running in 8 bit mode\n");
+			db->outblk    = dm9000_outblk_8bit;
+			db->inblk     = dm9000_inblk_8bit;
+			db->rx_status = dm9000_rx_status_8bit;
+			break;
+		default:
+			/* Assume 8 bit mode, will probably not work anyway */
+			printf("DM9000: Undefined IO-mode:0x%x\n", io_mode);
+			db->outblk    = dm9000_outblk_8bit;
+			db->inblk     = dm9000_inblk_8bit;
+			db->rx_status = dm9000_rx_status_8bit;
+			break;
+	}
 	/* Program operating register, only internal phy supported */
 	DM9000_iow(NCR, 0x0);
 	/* TX Polling clear */
@@ -608,7 +982,7 @@ int DM9000_Init(void)
 	}
 	printf("mode\n\t");
 	return 0;	
-#endif	
+
 }
 
 void test_dm9000(void)
@@ -630,22 +1004,36 @@ void test_dm9000(void)
 	printf("\n\t");	
 }
 
-void sdbinit(void)
+/*****************************************************************************
+ 函 数 名  : dm9000_initialize
+ 功能描述  : initializs the dm9000 and register it
+ 输入参数  : bd_t *bis  
+ 输出参数  : 无
+ 返 回 值  : 
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年9月21日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+int dm9000_initialize(bd_t *bis)
 {
-	DM9000_iow(NCR,0x03); //软件复位，MAC 内部循环反馈
-	udelay_us(20); //延时 10us 以上，等待软件复位完成
-	DM9000_iow(NCR,0x00); //复位完成，设置正常工作模式
-	DM9000_iow(NCR,0x03); //第二次软件复位。确保软件复位完全成功
-	udelay_us(20);
-	DM9000_iow(NCR,0x00);
-	DM9000_iow(IMR,0x80);//使能指向 SRAM 的指针的自动返回功能
-	DM9000_iow(NSR,0x2c); //清除各种状态标志位
-	DM9000_iow(ISR,0xbf); //清除所有中断标志位,8-bit
-	DM9000_iow(RCR,0x39);//接收控制
-	DM9000_iow(TCR,0x00);//发送控制
-	DM9000_iow(BPTR,0x3f);//设置 RX 的最低阀值，小于将产生拥塞
-	DM9000_iow(FCTR,0x00);//接收 FIFO 门限 3K，8K
-	DM9000_iow(FCR,0xff);//启动一些控制功能
-	DM9000_iow(SMCR,0x00);//未启动特殊模式
+	struct eth_device *dev = &(dm9000_info.netdev);
+
+	/* Load MAC address from EEPROM */
+	dm9000_get_enetaddr(dev);
+
+	dev->init = DM9000_Init;
+	dev->halt = dm9000_halt;
+	dev->send = DM9000_sendPacket;
+	dev->recv = dm9000_revPacket;
+	sprintf(dev->name, "dm9000");
+	eth_register(dev);
+
+	return 0;
 }
+
 

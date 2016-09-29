@@ -1,7 +1,9 @@
 #ifndef __DM9000_H__
 #define __DM9000_H__
-
+#include <types.h>
 #include <io.h>
+#include <net.h>
+#include <bsp.h>
 //DM9000 base address for bank4 
 #define DM9000_CMD_BASE		(0x20000000)
 #define DM9000_DAT_BASE		(0x20000004)
@@ -9,6 +11,13 @@
 #define DM9000_ID		0x90000A46	//dm9000 ID
 #define DM9000_PKT_MAX		1536	/* Received packet max size */
 #define DM9000_PKT_RDY		0x01	/* Packet ready to receive */
+/* IO control flags */
+#define DM9000_PLATF_8BITONLY	(0x0001)
+#define DM9000_PLATF_16BITONLY	(0x0002)
+#define DM9000_PLATF_32BITONLY	(0x0004)
+#define DM9000_PLATF_EXT_PHY	(0x0008)
+#define DM9000_PLATF_NO_EEPROM	(0x0010)
+#define DM9000_PLATF_SIMPLE_PHY (0x0020)  /* Use NSR to find LinkStatus */
 
 //define the dm9000 contorl and status registers
 #define NCR			0x00			//network control register
@@ -110,7 +119,17 @@
 #define IMR_PTM			(1<<1)
 #define IMR_PRM			(1<<0)
 /* PHY address 0x01 */
-#define PHY				0x40			
+#define PHY				0x40	
+/*dm9000 platform resource*/
+struct dm9000_plat_data {
+	unsigned int	flags;
+	unsigned char	dev_addr[6];
+
+	/* allow replacement IO routines */
+	void	(*inblk)(void  *reg, void *data, int len);
+	void	(*outblk)(void  *reg, void *data, int len);
+	void	(*dumpblk)(void  *reg, int len);
+};
 
 /*dm9000 register control command*/
 #define DM9000_outb(d,r) writeb(d, (volatile UINT8 *)(r))
@@ -121,11 +140,12 @@
 #define DM9000_inl(r) readl((volatile UINT32 *)(r))
 /*dm9000 function declarations*/
 void test_dm9000( void );
-int DM9000_Init(void);
-void DM9000_sendPacket(char* data_src, unsigned int length );
+
+int DM9000_Init(struct eth_device *dev);
+int DM9000_sendPacket(struct eth_device *netdev,void* data_src, unsigned int length );
 void inline DM9000_reset( void );
-int dm9000_revPacket( unsigned char* data_src );
-void sdbinit(void);
+int dm9000_revPacket(struct eth_device *dev,unsigned char* data_src );
+int dm9000_initialize(bd_t *bis);
 
 #endif
 

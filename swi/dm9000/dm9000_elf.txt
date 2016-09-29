@@ -1,0 +1,14 @@
+dm9000_elf  :
+section             size         addr
+.init              0x8c8          0x0
+.text             0x9e94   0x30000000
+.rodata            0xbb0   0x30009e94
+.data              0x10a   0x3000aa44
+.data.rel.local     0x28   0x3000ab50
+.data.rel            0xc   0x3000ab78
+.bss               0x900   0x3000ab84
+.ARM.attributes     0x26          0x0
+.comment           0x45e          0x0
+Total             0xc1ce
+
+

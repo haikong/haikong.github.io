@@ -43,8 +43,6 @@ obj-y += dm9000/
 obj-y += test/
 obj-y += net/
 obj-y += miscellaneous/
-obj-y += bsp/
-obj-y += platform/
 obj-y += main/
 
 all :

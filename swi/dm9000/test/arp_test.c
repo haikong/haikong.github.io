@@ -8,7 +8,7 @@
 static unsigned char arpsendbuf[42]={
  
        0xff,0xff,0xff,0xff,0xff,0xff,                     	//以太网目标地址，全1表示为广播地址
-       0xaa,0xbb,0xcc,0xdd,0xee,0xff,        				//以太网源地址
+       0x1a,0x2b,0x3c,0x4d,0x5e,0x6f,        				//以太网源地址
        0x08,0x06,                                        	//帧类型：ARP帧
       
        0x00,0x01,                                       	 //硬件类型：以太网
@@ -49,7 +49,6 @@ void arp_test(void)
 	unsigned char buffer[1000] = {0};
 	unsigned short packet_len;
 	t_ARP* ARPBUF = (t_ARP*)buffer;
-	sdbinit();
 	//ethernet mac header
 	memcpy(ARPBUF->ethhdr.d_mac,host_mac_addr,6);
 	memcpy(ARPBUF->ethhdr.s_mac,mac_addr,6);
@@ -69,7 +68,7 @@ void arp_test(void)
 	DM9000_sendPacket((char*)buffer,packet_len);
 	printf("arp test\n\r");
 #else
-	DM9000_sendPacket(arpsendbuf,42);
+	DM9000_sendPacket(NULL,(char*)arpsendbuf,42);
 	printf("arp_test:DM9000_sendPacket 42\n\r");	
 #endif
 }

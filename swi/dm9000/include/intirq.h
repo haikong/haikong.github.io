@@ -97,10 +97,6 @@ extern "C"{
 #define BIT_SUB_TXD0	(0x1<<1)
 #define BIT_SUB_RXD0	(0x1<<0)
 /*extern 0-23 interrupt vector number*/
-#define EXTERNIRQ0		0
-#define EXTERNIRQ1		1
-#define EXTERNIRQ2		2
-#define EXTERNIRQ3		3
 #define EXTERNIRQ4		4
 #define EXTERNIRQ5		5
 #define EXTERNIRQ6		6
