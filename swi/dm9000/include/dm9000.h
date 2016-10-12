@@ -4,6 +4,7 @@
 #include <io.h>
 #include <net.h>
 #include <bsp.h>
+#include <stdio.h>
 //DM9000 base address for bank4 
 #define DM9000_CMD_BASE		(0x20000000)
 #define DM9000_DAT_BASE		(0x20000004)
@@ -130,6 +131,24 @@ struct dm9000_plat_data {
 	void	(*outblk)(void  *reg, void *data, int len);
 	void	(*dumpblk)(void  *reg, int len);
 };
+/* #define CONFIG_DM9000_DEBUG */
+
+#ifdef CONFIG_DM9000_DEBUG
+#define DM9000_DBG(fmt,args...) printf(fmt, ##args)
+#define DM9000_DMP_PACKET(func,packet,length)  \
+	do { \
+		int i; 							\
+		printf("%s: length: %d\n", func, length);		\
+		for (i = 0; i < length; i++) {				\
+			if (i % 8 == 0)					\
+				printf("\n%s: %02x: ", func, i);	\
+			printf("%02x ", ((unsigned char *) packet)[i]);	\
+		} printf("\n");						\
+	} while(0)
+#else
+#define DM9000_DBG(fmt,args...)
+#define DM9000_DMP_PACKET(func,packet,length)
+#endif
 
 /*dm9000 register control command*/
 #define DM9000_outb(d,r) writeb(d, (volatile UINT8 *)(r))
@@ -140,11 +159,9 @@ struct dm9000_plat_data {
 #define DM9000_inl(r) readl((volatile UINT32 *)(r))
 /*dm9000 function declarations*/
 void test_dm9000( void );
-
 int DM9000_Init(struct eth_device *dev);
 int DM9000_sendPacket(struct eth_device *netdev,void* data_src, unsigned int length );
 void inline DM9000_reset( void );
-int dm9000_revPacket(struct eth_device *dev,unsigned char* data_src );
 int dm9000_initialize(bd_t *bis);
 
 #endif

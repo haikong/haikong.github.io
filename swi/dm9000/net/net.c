@@ -3,8 +3,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <io.h>
+#include <glob.h>
 /*ethnet devices*/
 static struct eth_device *eth_devices;
+/* XXX in both little & big endian machines 0xFFFF == ntohs(-1) */
+/* default is without VLAN */
+ushort		NetOurVLAN = 0xFFFF;
+/* ditto */
+ushort		NetOurNativeVLAN = 0xFFFF;
 
 /*****************************************************************************
  函 数 名  : cal_chksum
@@ -40,6 +46,25 @@ unsigned short cal_chksum(unsigned short *addr,int len)
 	sum += sum >> 16;
 	cksum = ~sum;
 	return cksum;
+}
+
+unsigned NetCksum(uchar *ptr, int len)
+{
+	ulong	xsum;
+	ushort *p = (ushort *)ptr;
+
+	xsum = 0;
+	while (len-- > 0)
+		xsum += *p++;
+	xsum = (xsum & 0xffff) + (xsum >> 16);
+	xsum = (xsum & 0xffff) + (xsum >> 16);
+	return xsum & 0xffff;
+}
+
+
+int NetCksumOk(uchar *ptr, int len)
+{
+	return !((NetCksum(ptr, len) + 1) & 0xfffe);
 }
 
 /*****************************************************************************
@@ -200,5 +225,142 @@ void eth_halt(struct eth_device *edev)
 
 }
 
+
+/*****************************************************************************
+ 函 数 名  : NetReceive
+ 功能描述  : recieve data from netdevices
+ 输入参数  : uchar *inpkt  
+             int len       
+ 输出参数  : 无
+ 返 回 值  : 
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年10月9日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+void NetReceive(uchar *inpkt, int len)
+{
+	t_ETH_HDR *et;
+	struct ip_udp_hdr *ip;
+	int eth_proto;
+#if defined(CONFIG_CMD_CDP)
+	int iscdp;
+#endif
+	ushort cti = 0, vlanid = VLAN_NONE, myvlanid, mynvlanid;
+
+	debug_cond(DEBUG_NET_PKT, "packet received\n");
+
+	et = (t_ETH_HDR *)inpkt;
+
+	/* too small packet? */
+	if (len < ETHER_HDR_SIZE)
+		return;
+
+#ifdef CONFIG_API
+	if (push_packet) {
+		(*push_packet)(inpkt, len);
+		return;
+	}
+#endif
+	myvlanid = ntohs(NetOurVLAN);
+	if (myvlanid == (ushort)-1)
+		myvlanid = VLAN_NONE;
+	mynvlanid = ntohs(NetOurNativeVLAN);
+	if (mynvlanid == (ushort)-1)
+		mynvlanid = VLAN_NONE;
+
+	eth_proto = ntohs(et->type);
+
+	if (eth_proto < 1514) {
+		struct e802_hdr *et802 = (struct e802_hdr *)et;
+		/*
+		 *	Got a 802.2 packet.  Check the other protocol field.
+		 *	XXX VLAN over 802.2+SNAP not implemented!
+		 */
+		eth_proto = ntohs(et802->et_prot);
+
+		ip = (struct ip_udp_hdr *)(inpkt + E802_HDR_SIZE);
+		len -= E802_HDR_SIZE;
+
+	} else if (eth_proto != PROT_VLAN) {	/* normal packet */
+		ip = (struct ip_udp_hdr *)(inpkt + ETHER_HDR_SIZE);
+		len -= ETHER_HDR_SIZE;
+
+	} else {			/* VLAN packet */
+		struct vlan_ethernet_hdr *vet =
+			(struct vlan_ethernet_hdr *)et;
+
+		debug_cond(DEBUG_NET_PKT, "VLAN packet received\n");
+
+		/* too small packet? */
+		if (len < VLAN_ETHER_HDR_SIZE)
+			return;
+
+		/* if no VLAN active */
+		if ((ntohs(NetOurVLAN) & VLAN_IDMASK) == VLAN_NONE)
+			return;
+
+		cti = ntohs(vet->vet_tag);
+		vlanid = cti & VLAN_IDMASK;
+		eth_proto = ntohs(vet->vet_type);
+
+		ip = (struct ip_udp_hdr *)(inpkt + VLAN_ETHER_HDR_SIZE);
+		len -= VLAN_ETHER_HDR_SIZE;
+	}
+
+	debug_cond(DEBUG_NET_PKT, "Receive from protocol 0x%x\n", eth_proto);
+
+	if ((myvlanid & VLAN_IDMASK) != VLAN_NONE) {
+		if (vlanid == VLAN_NONE)
+			vlanid = (mynvlanid & VLAN_IDMASK);
+		/* not matched? */
+		if (vlanid != (myvlanid & VLAN_IDMASK))
+			return;
+	}
+
+	switch (eth_proto) {
+
+	case PROT_ARP:
+		break;
+
+#ifdef CONFIG_CMD_RARP
+	case PROT_RARP:
+		break;
+#endif
+	case PROT_IP:
+		debug_cond(DEBUG_NET_PKT, "Got IP\n");
+		/* Before we start poking the header, make sure it is there */
+		if (len < IP_UDP_HDR_SIZE) {
+			debug("len bad %d < %lu\n", len,
+				(ulong)IP_UDP_HDR_SIZE);
+			return;
+		}
+		/* Check the packet length */
+		if (len < ntohs(ip->ip_len)) {
+			debug("len bad %d < %d\n", len, ntohs(ip->ip_len));
+			return;
+		}
+		len = ntohs(ip->ip_len);
+		debug_cond(DEBUG_NET_PKT, "len=%d, v=%02x\n",
+			len, ip->ip_hl_v & 0xff);
+
+		/* Can't deal with anything except IPv4 */
+		if ((ip->ip_hl_v & 0xf0) != 0x40)
+			return;
+		/* Can't deal with IP options (headers != 20 bytes) */
+		if ((ip->ip_hl_v & 0x0f) > 0x05)
+			return;
+		/* Check the Checksum of the header */
+		if (!NetCksumOk((uchar *)ip, IP_HDR_SIZE / 2)) {
+			debug("checksum bad\n");
+			return;
+		}
+		break;
+	}
+}
 
 

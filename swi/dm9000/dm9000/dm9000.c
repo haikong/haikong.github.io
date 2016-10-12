@@ -620,17 +620,76 @@ int DM9000_sendPacket(struct eth_device *netdev,void* data_src, unsigned int len
     修改内容   : 新生成函数
 
 *****************************************************************************/
-int dm9000_revPacket(struct eth_device *netdev, unsigned char* data_src )
+static int dm9000_revPacket(struct eth_device *netdev, unsigned char* data_src )
 {
 	unsigned char RX_First_byte=0;//RX SRAM 的第一个字节的值
-	unsigned char RX_status=0;//寄存器 RXSR 的值
-	unsigned int RX_length=0;//接收数据包的长度
-	unsigned short data_temp=0;
-	unsigned char i;//计数用
+	unsigned short RX_status=0;//寄存器 RXSR 的值
+	unsigned short RX_length=0;//接收数据包的长度
+	//unsigned short data_temp=0;
+	//unsigned char i;//计数用
+	struct board_info *db = &dm9000_info;
 
-	//clear the interrput
-	if(DM9000_ior(ISR) & 0x1)
-		DM9000_iow(ISR,0x1);
+	/* Check packet ready or not, we must check
+	   the ISR status first for DM9000 */
+	if (!(DM9000_ior(ISR) & 0x01)) /* Rx-ISR bit must be set. */
+		return 0;
+	/* clear PR status latched in bit 0 */
+	DM9000_iow(ISR, 0x01); 
+	/* There is _at least_ 1 package in the fifo, read them all */
+	for (;;) {
+		DM9000_ior(MRCMDX);	/* Dummy read */
+
+		/* Get most updated data,
+		   only look at bits 0:1, See application notes DM9000 */
+		RX_First_byte = DM9000_inb(DM9000_DAT_BASE) & 0x03;
+
+		/* Status check: this byte must be 0 or 1 */
+		if (RX_First_byte > DM9000_PKT_RDY) {
+			DM9000_iow(RCR, 0x00);	/* Stop Device */
+			DM9000_iow(ISR, 0x80);	/* Stop INT request */
+			printf("DM9000 error: status check fail: 0x%x\n",RX_First_byte);
+			return 0;
+		}
+
+		if (RX_First_byte != DM9000_PKT_RDY)
+			return 0; /* No packet received, ignore */
+
+		printf("receiving packet\n");
+
+		/* A packet ready now  & Get status/length */
+		(db->rx_status)(&RX_status, &RX_length);
+
+		printf("rx status: 0x%04x rx len: %d\n", RX_status, RX_length);
+
+		/* Move data from DM9000 */
+		/* Read received packet from RX SRAM */
+		(db->inblk)(data_src, RX_length);
+
+		if ((RX_status & 0xbf00) || (RX_length < 0x40)
+			|| (RX_length > DM9000_PKT_MAX)) {
+			if (RX_status & 0x100) {
+				printf("rx fifo error\n");
+			}
+			if (RX_status & 0x200) {
+				printf("rx crc error\n");
+			}
+			if (RX_status & 0x8000) {
+				printf("rx length error\n");
+			}
+			if (RX_length > DM9000_PKT_MAX) {
+				printf("rx length too big\n");
+				DM9000_reset();
+			}
+		} else {
+			DM9000_DMP_PACKET(__func__ , RX_status, RX_length);
+
+			DM9000_DBG("passing packet to upper layer\n");
+			//NetReceive(NetRxPackets[0], RX_length);
+		}
+	}
+	return 0;
+	
+#ifdef _DBG	
 	 //读取 RX SRAM 的第一个字节
 	 RX_First_byte = DM9000_ior(MRCMDX);//读取 RX SRAM 的第一个字节的值
 	 printf("RX_First_byte = 0x%x",RX_First_byte);
@@ -680,6 +739,7 @@ int dm9000_revPacket(struct eth_device *netdev, unsigned char* data_src )
 		DM9000_iow(IMR,0x81);
 	 	return -1;
 	 }
+#endif	 
 
 }
 

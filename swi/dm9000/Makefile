@@ -29,7 +29,6 @@ TARGET := dm9000
 
 obj-y := swi/
 obj-y += sys/
-obj-y += int/
 obj-y += init/
 obj-y += uart/
 obj-y += mmu/
@@ -39,6 +38,7 @@ obj-y += lcd/
 obj-y += ts/
 obj-y += timer/
 obj-y += glob/
+obj-y += int/
 obj-y += dm9000/
 obj-y += test/
 obj-y += net/

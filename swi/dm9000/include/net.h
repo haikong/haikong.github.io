@@ -1,6 +1,9 @@
 #ifndef __NET_H__
 #define __NET_H__
 #include <types.h>
+
+/* IPv4 addresses are always 32 bits in size */
+typedef UINT32		IPaddr_t;
 /**
  * enum sock_type - Socket types
  * @SOCK_STREAM: stream (connection) socket
@@ -40,6 +43,46 @@ typedef struct _eth_hdr {
 	unsigned char 	s_mac[6]; 	//源地址
 	unsigned short 	type; 		//协议类型
 }t_ETH_HDR;
+/* Ethernet header size */
+#define ETHER_HDR_SIZE	(sizeof(t_ETH_HDR))
+
+struct e802_hdr {
+	uchar		et_dest[6];	/* Destination node		*/
+	uchar		et_src[6];	/* Source node			*/
+	ushort		et_protlen;	/* Protocol or length		*/
+	uchar		et_dsap;	/* 802 DSAP			*/
+	uchar		et_ssap;	/* 802 SSAP			*/
+	uchar		et_ctl;		/* 802 control			*/
+	uchar		et_snap1;	/* SNAP				*/
+	uchar		et_snap2;
+	uchar		et_snap3;
+	ushort		et_prot;	/* 802 protocol			*/
+};
+
+/* 802 + SNAP + ethernet header size */
+#define E802_HDR_SIZE	(sizeof(struct e802_hdr))
+
+/*
+ *	Virtual LAN Ethernet header
+ */
+struct vlan_ethernet_hdr {
+	uchar		vet_dest[6];		/* Destination node		*/
+	uchar		vet_src[6];			/* Source node			*/
+	ushort		vet_vlan_type;		/* PROT_VLAN			*/
+	ushort		vet_tag;			/* TAG of VLAN			*/
+	ushort		vet_type;			/* protocol type		*/
+};
+
+/* VLAN Ethernet header size */
+#define VLAN_ETHER_HDR_SIZE	(sizeof(struct vlan_ethernet_hdr))
+
+#define PROT_IP		0x0800		/* IP protocol			*/
+#define PROT_ARP	0x0806		/* IP ARP protocol		*/
+#define PROT_RARP	0x8035		/* IP ARP protocol		*/
+#define PROT_VLAN	0x8100		/* IEEE 802.1q protocol		*/
+
+#define IPPROTO_ICMP	 1		/* Internet Control Message Protocol	*/
+#define IPPROTO_UDP		17		/* User Datagram Protocol		*/
 
 //IP 首部结构
 typedef struct _ip {
@@ -80,6 +123,37 @@ typedef struct _udp{
 	 unsigned short length; 	//UDP 数据包报总长度 （38 39）
 	 unsigned short udpchksum; 	//UDP 校验和(可选项) （40 41）
 }t_UDP;
+
+#define IP_OFFS		0x1fff 		/* ip offset *= 8 */
+#define IP_FLAGS	0xe000 		/* first 3 bits */
+#define IP_FLAGS_RES	0x8000 	/* reserved */
+#define IP_FLAGS_DFRAG	0x4000 	/* don't fragments */
+#define IP_FLAGS_MFRAG	0x2000 	/* more fragments */
+
+#define IP_HDR_SIZE		(sizeof( t_TCP))
+
+/*
+ *	Internet Protocol (IP) + UDP header.
+ */
+struct ip_udp_hdr {
+	uchar		ip_hl_v;	/* header length and version	*/
+	uchar		ip_tos;		/* type of service		*/
+	ushort		ip_len;		/* total length			*/
+	ushort		ip_id;		/* identification		*/
+	ushort		ip_off;		/* fragment offset field	*/
+	uchar		ip_ttl;		/* time to live			*/
+	uchar		ip_p;		/* protocol			*/
+	ushort		ip_sum;		/* checksum			*/
+	IPaddr_t	ip_src;		/* Source IP address		*/
+	IPaddr_t	ip_dst;		/* Destination IP address	*/
+	ushort		udp_src;	/* UDP source port		*/
+	ushort		udp_dst;	/* UDP destination port		*/
+	ushort		udp_len;	/* Length of UDP packet		*/
+	ushort		udp_xsum;	/* Checksum			*/
+};
+
+#define IP_UDP_HDR_SIZE		(sizeof(struct ip_udp_hdr))
+#define UDP_HDR_SIZE		(IP_UDP_HDR_SIZE - IP_HDR_SIZE)
 
 //ARP 首部结构
 typedef struct _arp{
@@ -157,6 +231,13 @@ typedef struct board_info {
 	struct eth_device netdev;
 }t_board_info,*pt_board_info;
 
+#define VLAN_NONE		4095			/* untagged */
+#define VLAN_IDMASK		0x0fff			/* mask of valid vlan id */
+#define DEBUG_LL_STATE 	0				/* Link local state machine changes */
+#define DEBUG_DEV_PKT 	0				/* Packets or info directed to the device */
+#define DEBUG_NET_PKT 	0				/* Packets on info on the network at large */
+#define DEBUG_INT_STATE 0				/* Internal network state changes */
+
 /*host to network endian*/
 #define htons(x) ((unsigned short)(\
 	(((unsigned short)(x) & (unsigned short)0x00ffU) << 8) |\
@@ -168,6 +249,9 @@ typedef struct board_info {
 	(((unsigned int)(x) & (unsigned int)0x00ff0000UL) >>  8) |		\
 	(((unsigned int)(x) & (unsigned int)0xff000000UL) >> 24)))
 
+#define ntohl(x) ((unsigned long)___ntohl(x))
+#define ntohs(x) ___ntohs(x)
+
 //calculate the check sum
 unsigned short cal_chksum(unsigned short *addr,int len);
 int eth_register(struct eth_device *dev);
@@ -176,6 +260,7 @@ int  eth_init (struct eth_device * edev);
 int  eth_send(struct eth_device *edev, void *packet,unsigned int length);
 int  eth_recv(struct eth_device *netdev, unsigned char* data_src );
 void eth_halt(struct eth_device *edev);
+void NetReceive(unsigned char *inpkt, int len);
 
 #endif
 
