@@ -22,6 +22,10 @@ SECTIONS {
     {
     	*(.data);
     }
+    .init_data ALIGN(4):
+    {
+    	*(.init_data);
+    }
     _bss_start = .;
     _text_size = _bss_start - _text_start;
     . = ALIGN(4);

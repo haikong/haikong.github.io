@@ -12,7 +12,10 @@
 #include <miscellaneous.h>
 #include <test.h>
 #include <timer.h>
-
+#include <io.h>
+#include <glob.h>
+#include <bsp.h>
+#include <net.h>
 /*-O2优化时参数需加volatile,否则被优化为0*/
 static  inline void wait(volatile unsigned long time)
 {
@@ -131,24 +134,39 @@ void adc_test(void)
 /*main*/
 int main(int argc,char** argv)
 {
+	int ret = 0;
 	//swi_test();
     clean_bss();	
     uart0_init();
 	init_led();
 	init_irq();
 	#ifdef _DEBUG
-	timer_init();					//invoking timer0 initialize and enable timer0 handle	
-	register_interrupt(ISR_TIMER0_OFT,Timer0_Handle);
-	#endif
-	if(DM9000_Init(NULL) < 0)
-		return -1;
 	/*register extern4*/	
+	key_init(4,EXTINT);
 	register_extern_int(EXTERNIRQ4,KeyINT2_Handle);	
+	//invoking timer0 initialize and enable timer0 handle	
+	register_interrupt(ISR_TIMER0_OFT,Timer0_Handle);	
+	timer_init();					
+	#endif
+	smdk2440_machine_init();
+	ret = dm9000_initialize(NULL);
+	if(ret != 0)
+	{
+		printf("dm9000_initialize error.\n");
+		goto tail;
+	}
+	ret = eth_init();
+	if(ret != 0)
+	{
+		printf("eth_init error.\n");
+		goto tail;	
+	}	
 	wait(50000);
 	test_dm9000();
 	arp_test();
 	wait(500000);	
 	test_dm9000();
+tail:	
 	while(1);
 	return 0;
 }

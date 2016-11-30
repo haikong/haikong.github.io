@@ -22,7 +22,6 @@ void timer_init(void)
 	TCON 	= 0x9;			//自动重载开启,start timer
 }
 
-
 /*timer0 hanlder*/
 void Timer0_Handle(unsigned int vec_num)
 {

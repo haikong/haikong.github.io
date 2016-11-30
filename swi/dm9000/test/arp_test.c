@@ -68,7 +68,7 @@ void arp_test(void)
 	DM9000_sendPacket((char*)buffer,packet_len);
 	printf("arp test\n\r");
 #else
-	DM9000_sendPacket(NULL,(char*)arpsendbuf,42);
+	DM9000_sendPacket((char*)arpsendbuf,42);
 	printf("arp_test:DM9000_sendPacket 42\n\r");	
 #endif
 }

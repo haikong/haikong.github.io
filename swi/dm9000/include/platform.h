@@ -5,15 +5,15 @@
 #include <bsp.h>
 #include <io.h>
 /*platform device struct*/
-struct platform_device {
+typedef struct platform_device{
 	const char*			name;
 	int					id;
 	UINT32				num_resources;
 	struct resource*	resource;
-	struct platform_device* next;
+	struct platform_device *next;
 	void* 				private_data;/*private data*/
-};
+}t_platform_device;
 /*function declaration*/
-int platform_add_devices(struct platform_device **devs, int num);
+int platform_add_devices(t_platform_device **devs, int num);
 #endif
 

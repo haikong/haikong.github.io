@@ -7,10 +7,17 @@
 #include <net.h>
 #include <glob.h>
 #include <bsp.h>
+#include <platform.h>
+#include <string.h>
+#include <io.h> 
+/*glob platform devices*/
+extern t_platform_device *gt_platform_device;
 /*mac address*/
 static unsigned char mac_addr[6] __attribute__ ((__aligned__(4)))= {0x1a,0x2b,0x3c,0x4d,0x5e,0x6f};
 /*dm9000 board infomation*/
 static t_board_info dm9000_info;
+static unsigned long dm9000_cmd_base = DM9000_CMD_BASE;
+static unsigned long dm9000_data_base = DM9000_DAT_BASE;
 /*****************************************************************************
  函 数 名  : void  udelay_us(int us)
  功能描述  : just for udelay some times about xx us,FCK = 200MHZ = 5ns.
@@ -74,7 +81,7 @@ static void dm9000_outblk_8bit( volatile void *data_ptr, int count )
 {
 	int i;
 	for (i = 0; i < count; i++)
-		DM9000_outb((((unsigned char*) data_ptr)[i] & 0xff), DM9000_DAT_BASE);    
+		DM9000_outb((((unsigned char*) data_ptr)[i] & 0xff), dm9000_data_base);    
 }
 /*****************************************************************************
  函 数 名  : dm9000_outblk_16bit
@@ -98,7 +105,7 @@ static void dm9000_outblk_16bit( volatile void *data_ptr, int count )
 	unsigned int tmplen = (count + 1) / 2;
 	
 	for (i = 0; i < tmplen; i++)
-		DM9000_outw((((unsigned short*) data_ptr)[i]), DM9000_DAT_BASE);    
+		DM9000_outw((((unsigned short*) data_ptr)[i]), dm9000_data_base);    
 }
 
 /*****************************************************************************
@@ -123,7 +130,7 @@ static void dm9000_outblk_32bit( volatile void *data_ptr, int count )
 	unsigned int tmplen = (count + 3) / 4;
 	
 	for (i = 0; i < tmplen; i++)
-		DM9000_outl((((unsigned int*) data_ptr)[i]), DM9000_DAT_BASE);    
+		DM9000_outl((((unsigned int*) data_ptr)[i]), dm9000_data_base);    
 }
 /*****************************************************************************
  函 数 名  : dm9000_inblk_8bit
@@ -145,7 +152,7 @@ static void dm9000_inblk_8bit(void *data_ptr, int count)
 {
 	int i;
 	for (i = 0; i < count; i++)
-		((UINT8*) data_ptr)[i] = DM9000_inb(DM9000_DAT_BASE);
+		((UINT8*) data_ptr)[i] = DM9000_inb(dm9000_data_base);
 }
 /*****************************************************************************
  函 数 名  : dm9000_inblk_16bit
@@ -169,7 +176,7 @@ static void dm9000_inblk_16bit(void *data_ptr, int count)
 	UINT32 tmplen = (count + 1) / 2;
 
 	for (i = 0; i < tmplen; i++)
-		((UINT16 *) data_ptr)[i] = DM9000_inw(DM9000_DAT_BASE);
+		((UINT16 *) data_ptr)[i] = DM9000_inw(dm9000_data_base);
 }
 /*****************************************************************************
  函 数 名  : dm9000_inblk_32bit
@@ -193,7 +200,7 @@ static void dm9000_inblk_32bit(void *data_ptr, int count)
 	UINT32 tmplen = (count + 3) / 4;
 
 	for (i = 0; i < tmplen; i++)
-		((UINT32 *) data_ptr)[i] = DM9000_inl(DM9000_DAT_BASE);
+		((UINT32 *) data_ptr)[i] = DM9000_inl(dm9000_data_base);
 }
 /*****************************************************************************
  函 数 名  : dm9000_rx_status_8bit
@@ -213,14 +220,14 @@ static void dm9000_inblk_32bit(void *data_ptr, int count)
 *****************************************************************************/
 static void dm9000_rx_status_8bit(UINT16 *RxStatus, UINT16 *RxLen)
 {
-	DM9000_outb(MRCMD, DM9000_CMD_BASE);
+	DM9000_outb(MRCMD, dm9000_cmd_base);
 
 	*RxStatus =
-	    __le16_to_cpu(DM9000_inb(DM9000_DAT_BASE) +
-			  (DM9000_inb(DM9000_DAT_BASE) << 8));
+	    __le16_to_cpu(DM9000_inb(dm9000_data_base) +
+			  (DM9000_inb(dm9000_data_base) << 8));
 	*RxLen =
-	    __le16_to_cpu(DM9000_inb(DM9000_DAT_BASE) +
-			  (DM9000_inb(DM9000_DAT_BASE) << 8));
+	    __le16_to_cpu(DM9000_inb(dm9000_data_base) +
+			  (DM9000_inb(dm9000_data_base) << 8));
 }
 /*****************************************************************************
  函 数 名  : dm9000_rx_status_16bit
@@ -240,10 +247,10 @@ static void dm9000_rx_status_8bit(UINT16 *RxStatus, UINT16 *RxLen)
 *****************************************************************************/
 static void dm9000_rx_status_16bit(UINT16 *RxStatus, UINT16 *RxLen)
 {
-	DM9000_outb(MRCMD, DM9000_CMD_BASE);
+	DM9000_outb(MRCMD, dm9000_cmd_base);
 
-	*RxStatus =__le16_to_cpu(DM9000_inw(DM9000_DAT_BASE));
-	*RxLen =__le16_to_cpu(DM9000_inw(DM9000_DAT_BASE));
+	*RxStatus =__le16_to_cpu(DM9000_inw(dm9000_data_base));
+	*RxLen =__le16_to_cpu(DM9000_inw(dm9000_data_base));
 }
 /*****************************************************************************
  函 数 名  : dm9000_rx_status_32bit
@@ -265,8 +272,8 @@ static void dm9000_rx_status_32bit(UINT16 *RxStatus, UINT16 *RxLen)
 {
 	UINT32 tmpdata;
 
-	DM9000_outb(MRCMD, DM9000_CMD_BASE);
-	tmpdata = DM9000_inl(DM9000_DAT_BASE);
+	DM9000_outb(MRCMD, dm9000_cmd_base);
+	tmpdata = DM9000_inl(dm9000_data_base);
 
 	*RxStatus =__le16_to_cpu(tmpdata);
 	*RxLen =__le16_to_cpu(tmpdata >> 16);
@@ -290,8 +297,8 @@ static void dm9000_rx_status_32bit(UINT16 *RxStatus, UINT16 *RxLen)
 *****************************************************************************/
 static void inline DM9000_iow(unsigned long reg,char data )
 {
-	DM9000_outb(reg,DM9000_CMD_BASE);
-	DM9000_outb(data,DM9000_DAT_BASE);
+	DM9000_outb(reg,dm9000_cmd_base);
+	DM9000_outb(data,dm9000_data_base);
 }
 
 /*****************************************************************************
@@ -311,8 +318,8 @@ static void inline DM9000_iow(unsigned long reg,char data )
 *****************************************************************************/
 static unsigned char inline DM9000_ior(unsigned long reg )
 {
-    DM9000_outb(reg,DM9000_CMD_BASE);
-	return DM9000_inb(DM9000_DAT_BASE);
+    DM9000_outb(reg,dm9000_cmd_base);
+	return DM9000_inb(dm9000_data_base);
 }
 
 /*****************************************************************************
@@ -333,8 +340,8 @@ static unsigned char inline DM9000_ior(unsigned long reg )
 *****************************************************************************/
 static void inline DM9000_iows(unsigned long reg,short data )
 {
-	DM9000_outw(reg,DM9000_CMD_BASE);
-	DM9000_outw(data,DM9000_DAT_BASE);
+	DM9000_outw(reg,dm9000_cmd_base);
+	DM9000_outw(data,dm9000_data_base);
 }
 /*****************************************************************************
  函 数 名  : dm9000_read_srom_word
@@ -389,6 +396,66 @@ void dm9000_write_srom_word(int offset, UINT16 val)
 }
 #endif
 
+/*****************************************************************************
+ 函 数 名  : get_dm9000_resoures
+ 功能描述  : gain dm9000 devices' resoures
+ 输入参数  :   
+ 输出参数  : 无
+ 返 回 值  : 0:succeed
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年10月23日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+static int get_dm9000_resoures(void)
+{
+	int i,num,ret = 0;
+	t_platform_device *pdev;
+	pdev = gt_platform_device;
+	/*select the devices*/
+	while(pdev != NULL)
+	{
+		if(0 == strcmp(pdev->name,"dm9000"))
+			break;
+		pdev = pdev->next;
+	}
+	/*no such the devices*/
+	if(NULL == pdev)
+	{
+		ret =  -1;
+		goto tail;
+	}
+	/*gain dm9000 devices resource's number*/
+	num = pdev->num_resources;
+	if(num < 1)
+	{
+		ret =  -1;
+		goto tail;
+	}
+	for(i = 0;i < num;i++)
+	{
+		if((i == 0) && (pdev->resource[i].flags == IORESOURCE_MEM))
+		{
+			dm9000_info.netdev.iobase = pdev->resource[i].start;
+		}
+		else if((pdev->resource[i].flags & IORESOURCE_IRQ) == IORESOURCE_IRQ)
+		{
+			dm9000_info.netdev.int_base = pdev->resource[i].start;
+			dm9000_info.netdev.int_state = pdev->resource[i].flags;
+		}
+	}
+	
+	dm9000_info.netdev.priv = pdev->private_data;
+	snprintf(dm9000_info.netdev.name,16,pdev->name);
+	dm9000_cmd_base = dm9000_info.netdev.iobase;
+	dm9000_data_base = dm9000_info.netdev.iobase + 4;	
+tail:	
+	return ret;
+}
 /*****************************************************************************
  函 数 名  : dm9000_get_enetaddr
  功能描述  : get dm9000 mac addree 
@@ -552,7 +619,7 @@ void inline DM9000_reset( void )
     修改内容   : 新生成函数
 
 *****************************************************************************/
-int DM9000_sendPacket(struct eth_device *netdev,void* data_src, unsigned int length )
+int DM9000_sendPacket(void* data_src, unsigned int length )
 {
     unsigned int len;
 	int i;
@@ -567,7 +634,7 @@ int DM9000_sendPacket(struct eth_device *netdev,void* data_src, unsigned int len
 	for(i = 0;i < len;i +=2)
 	{
 		udelay_us(2);
-		DM9000_iows(DM9000_DAT_BASE,src[i] | (src[i + 1] << 8));	
+		DM9000_iows(dm9000_data_base,src[i] | (src[i + 1] << 8));	
 	}
 	#endif
 	//write the length to TXPLH and TXPLL registers	
@@ -620,7 +687,7 @@ int DM9000_sendPacket(struct eth_device *netdev,void* data_src, unsigned int len
     修改内容   : 新生成函数
 
 *****************************************************************************/
-static int dm9000_revPacket(struct eth_device *netdev, unsigned char* data_src )
+static int dm9000_revPacket(unsigned char* data_src )
 {
 	unsigned char RX_First_byte=0;//RX SRAM 的第一个字节的值
 	unsigned short RX_status=0;//寄存器 RXSR 的值
@@ -641,7 +708,7 @@ static int dm9000_revPacket(struct eth_device *netdev, unsigned char* data_src )
 
 		/* Get most updated data,
 		   only look at bits 0:1, See application notes DM9000 */
-		RX_First_byte = DM9000_inb(DM9000_DAT_BASE) & 0x03;
+		RX_First_byte = DM9000_inb(dm9000_data_base) & 0x03;
 
 		/* Status check: this byte must be 0 or 1 */
 		if (RX_First_byte > DM9000_PKT_RDY) {
@@ -700,13 +767,13 @@ static int dm9000_revPacket(struct eth_device *netdev, unsigned char* data_src )
 	 if(RX_First_byte == 0x01)
 	 {
 	 	unsigned char io_mode = DM9000_ior(ISR)>>6;
-		DM9000_iow(DM9000_CMD_BASE,MRCMD); //将 Memory Write CMD 发送到 ADD 上
+		DM9000_iow(dm9000_cmd_base,MRCMD); //将 Memory Write CMD 发送到 ADD 上
 	
 	 	if(io_mode == 0)//IO word mode
 	 	{
-	 		RX_First_byte = DM9000_ior(DM9000_DAT_BASE);//读取接收状态寄存器的值
+	 		RX_First_byte = DM9000_ior(dm9000_data_base);//读取接收状态寄存器的值
  			printf("\r\nRX_First_byte = %d\r\nRX_status = %d\r\n",RX_First_byte&0x00ff,(RX_status>>8)&0x00ff);
-			RX_length = DM9000_ior(DM9000_DAT_BASE);//读取接收状态寄存器的值
+			RX_length = DM9000_ior(dm9000_data_base);//读取接收状态寄存器的值
 			printf("\r\nRX_length = %d\r\n",RX_length);
 		}
 		else if(io_mode == 1)//IO dword mode
@@ -721,7 +788,7 @@ static int dm9000_revPacket(struct eth_device *netdev, unsigned char* data_src )
 		//读取接收的数据包
 		for(i=0;i<RX_length;i=i+2)
 		{
-			data_temp = DM9000_ior(DM9000_DAT_BASE);//读取到的 16bit 的数据
+			data_temp = DM9000_ior(dm9000_data_base);//读取到的 16bit 的数据
 			data_src[i] = data_temp&0x00ff;
 			printf(" %x",data_src[i]);
 			data_src[i+1] = (data_temp >> 8) & 0xff;
@@ -763,8 +830,7 @@ static void dm9000_isr(unsigned int vector)
 {
 	int i;
 	unsigned char buf[1000];
-	printf("%s-%s-%d\n\t",__FILE__,__FUNCTION__,__LINE__);
-	i = dm9000_revPacket(NULL,buf);
+	i = dm9000_revPacket(buf);
 	if(i >0)
 		arp_process((char*)buf,i);
 }
@@ -787,12 +853,12 @@ static void dm9000_isr(unsigned int vector)
 static void dm9000_gpio_init( void )
 {
     //setting dm9000 extern interrupt
-	key_init(7,0x2);
+	key_init(dm9000_info.netdev.int_base,EXTINT);
 	//setting EINT7 is Rising edge triggered
-	EXTINT0 &=  ~(7 << 28);
-	EXTINT0 |= (RETIG << 28);
+	EXTINT0 &=  ~(dm9000_info.netdev.int_base << 28);
+	EXTINT0 |= ((dm9000_info.netdev.int_state & 0xf)<< 28);
 	//register EINT7 ISR
-	register_extern_int(EXTERNIRQ7,dm9000_isr);
+	register_extern_int(dm9000_info.netdev.int_base,dm9000_isr);
 }
 
 /*****************************************************************************
@@ -850,10 +916,10 @@ static int dm9000_probe(void)
 	id_val |= DM9000_ior(PIDL) << 16;
 	id_val |= DM9000_ior(PIDH) << 24;
 	if (id_val == DM9000_ID) {
-		printf("dm9000 i/o: 0x%x, id: 0x%x \n\t", DM9000_CMD_BASE,id_val);
+		printf("dm9000 i/o: 0x%x, id: 0x%x \n\t", (unsigned int)dm9000_cmd_base,id_val);
 		return 0;
 	} else {
-		printf("dm9000 not found at 0x%08x id: 0x%08x\n\t",DM9000_CMD_BASE, id_val);
+		printf("dm9000 not found at 0x%08x id: 0x%08x\n\t",(unsigned int)dm9000_cmd_base, id_val);
 		return -1;
 	}
 }
@@ -903,7 +969,7 @@ static void dm9000_phy_write(int reg, UINT16 value)
     修改内容   : 新生成函数
 
 *****************************************************************************/
-static void dm9000_halt(struct eth_device *netdev)
+static void dm9000_halt(void)
 {
 	/* RESET devie */
 	dm9000_phy_write(0, 0x8000);	/* PHY RESET */
@@ -937,10 +1003,12 @@ static void dm9000_halt(struct eth_device *netdev)
 
 *****************************************************************************/
 
-int DM9000_Init(struct eth_device *dev)
+int DM9000_Init(void)
 {
 	unsigned char i,io_mode,oft,lnk;	
 	struct board_info *db = &dm9000_info;
+	if(db == NULL)
+		return -1;
 	//setting dm9000 ISR
 	dm9000_gpio_init();
 	/* RESET device */
@@ -1081,8 +1149,15 @@ void test_dm9000(void)
 *****************************************************************************/
 int dm9000_initialize(bd_t *bis)
 {
-	struct eth_device *dev = &(dm9000_info.netdev);
-
+	int ret = 0;
+	struct eth_device *dev;
+	/*setting dm9000*/
+	ret = get_dm9000_resoures();
+	if(ret < 0){
+		printf("get resoures failed.\n");
+		goto tail;
+	}		
+	dev = &(dm9000_info.netdev);
 	/* Load MAC address from EEPROM */
 	dm9000_get_enetaddr(dev);
 
@@ -1090,10 +1165,9 @@ int dm9000_initialize(bd_t *bis)
 	dev->halt = dm9000_halt;
 	dev->send = DM9000_sendPacket;
 	dev->recv = dm9000_revPacket;
-	sprintf(dev->name, "dm9000");
-	eth_register(dev);
-
-	return 0;
+	ret = eth_register(dev);
+tail:
+	return ret;
 }
 
 

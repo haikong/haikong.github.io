@@ -18,7 +18,6 @@ static void extern_isr(unsigned int vector)
 	unsigned int int_pend;
 	int_pend = EINTPEND;
 	i = fbit_pend(int_pend);
-	printf("%s-%s-%dline,i = %d\n\t",__FILE__,__FUNCTION__,__LINE__,i);
 	if(i > 31)
 		Dummy_isr(vector);
 	else
@@ -130,11 +129,6 @@ void C_IRQ_Handler(int i,int j)
 	unsigned long oft = INTOFFSET;
 	/* 调用中断服务程序 */
     isr_handle_array[oft](oft);
-#if 0	
-	//清外部中断4-23
-	if ((oft == 4) || (oft == 5))
-        EINTPEND = 0xfffff0;    //EINT4-7合用IRQ4，EINT8-23合用IRQ5,注意EINTPEND[3:0]保留未用，向这些位写入1可能导致未知结果
-#endif
 	//清除中断源
 	SUBSRCPND = SUBSRCPND;
 	SRCPND |= 1 << oft;

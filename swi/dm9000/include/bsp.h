@@ -79,4 +79,8 @@ typedef struct bd_info {
 	} bi_dram[CONFIG_NR_DRAM_BANKS];
 #endif /* CONFIG_NR_DRAM_BANKS */
 } bd_t;
+/*section macro*/
+#define _init_data __attribute__((__section__(".init_data")))
+void  smdk2440_machine_init(void);
+
 #endif

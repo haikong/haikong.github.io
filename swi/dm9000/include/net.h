@@ -198,16 +198,18 @@ struct eth_device {
 	char name[16];
 	unsigned char enetaddr[6];
 	int iobase;
+	int int_base;
+	int int_state;
 	int state;
-
-	int  (*init) (struct eth_device *);
-	int  (*send) (struct eth_device *, void *packet,unsigned int length);
-	int  (*recv) (struct eth_device *netdev, unsigned char* data_src );
-	void (*halt) (struct eth_device *);
+	
+	int  (*init) (void);
+	int  (*send) (void *packet,unsigned int length);
+	int  (*recv) (unsigned char* data_src );
+	void (*halt) (void);
 #ifdef CONFIG_MCAST_TFTP
-	int (*mcast) (struct eth_device *, UINT32 ip, UINT8 set);
+	int (*mcast) (UINT32 ip, UINT8 set);
 #endif
-	int  (*write_hwaddr) (struct eth_device *);
+	int  (*write_hwaddr) (void);
 	struct eth_device *next;
 	int index;
 	void *priv;
@@ -256,10 +258,10 @@ typedef struct board_info {
 unsigned short cal_chksum(unsigned short *addr,int len);
 int eth_register(struct eth_device *dev);
 int eth_unregister(struct eth_device *dev);
-int  eth_init (struct eth_device * edev);
-int  eth_send(struct eth_device *edev, void *packet,unsigned int length);
-int  eth_recv(struct eth_device *netdev, unsigned char* data_src );
-void eth_halt(struct eth_device *edev);
+int  eth_init (void);
+int  eth_send(void *packet,unsigned int length);
+int  eth_recv(unsigned char* data_src );
+void eth_halt(void);
 void NetReceive(unsigned char *inpkt, int len);
 
 #endif

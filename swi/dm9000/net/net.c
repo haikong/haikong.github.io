@@ -6,11 +6,14 @@
 #include <glob.h>
 /*ethnet devices*/
 static struct eth_device *eth_devices;
+static struct eth_device *current_ethdev;
+
 /* XXX in both little & big endian machines 0xFFFF == ntohs(-1) */
 /* default is without VLAN */
 ushort		NetOurVLAN = 0xFFFF;
 /* ditto */
 ushort		NetOurNativeVLAN = 0xFFFF;
+
 
 /*****************************************************************************
  函 数 名  : cal_chksum
@@ -87,7 +90,7 @@ int eth_register(struct eth_device *dev)
 	struct eth_device *d;
 	static int index;
 	/*assert*/
-	if((dev == NULL) || (strlen(dev->name) < sizeof(dev->name)))
+	if(dev == NULL)
 	{
 		printf("eth_register error.\n\t");
 		return -1;
@@ -160,8 +163,14 @@ int eth_unregister(struct eth_device *dev)
     修改内容   : 新生成函数
 
 *****************************************************************************/
-int  eth_init (struct eth_device * edev)
+int  eth_init (void)
 {
+	
+	/* No device */
+	if (!eth_devices)
+		return -1;
+	current_ethdev = eth_devices;
+	current_ethdev->init();
 	return 0;
 }
 /*****************************************************************************
@@ -181,9 +190,12 @@ int  eth_init (struct eth_device * edev)
     修改内容   : 新生成函数
 
 *****************************************************************************/
-int  eth_send(struct eth_device *edev, void *packet,unsigned int length)
+int  eth_send(void *packet,unsigned int length)
 {
-	return 0;
+		/* No device */
+	if (!current_ethdev)
+		return -1;
+	return current_ethdev->send(packet,length);
 }
 /*****************************************************************************
  函 数 名  : eth_recv
@@ -201,8 +213,9 @@ int  eth_send(struct eth_device *edev, void *packet,unsigned int length)
     修改内容   : 新生成函数
 
 *****************************************************************************/
-int  eth_recv(struct eth_device *netdev, unsigned char* data_src )
+int  eth_recv( unsigned char* data_src )
 {
+
 	return 0;
 }
 /*****************************************************************************
@@ -220,7 +233,7 @@ int  eth_recv(struct eth_device *netdev, unsigned char* data_src )
     修改内容   : 新生成函数
 
 *****************************************************************************/
-void eth_halt(struct eth_device *edev)
+void eth_halt(void)
 {
 
 }

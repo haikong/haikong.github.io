@@ -159,8 +159,8 @@ struct dm9000_plat_data {
 #define DM9000_inl(r) readl((volatile UINT32 *)(r))
 /*dm9000 function declarations*/
 void test_dm9000( void );
-int DM9000_Init(struct eth_device *dev);
-int DM9000_sendPacket(struct eth_device *netdev,void* data_src, unsigned int length );
+int DM9000_Init(void);
+int DM9000_sendPacket(void* data_src, unsigned int length );
 void inline DM9000_reset( void );
 int dm9000_initialize(bd_t *bis);
 

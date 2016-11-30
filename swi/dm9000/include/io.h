@@ -32,6 +32,11 @@
 #define IORESOURCE_AUTO		0x40000000
 #define IORESOURCE_BUSY		0x80000000	/* Driver has marked this resource busy */
 
+/*GPF types*/
+#define INPUT		(0)
+#define OUTPUT		(1)
+#define EXTINT		(2)
+#define RESEVERD 	(3)
 /*
  * Resources are tree-like, allowing
  * nesting etc..

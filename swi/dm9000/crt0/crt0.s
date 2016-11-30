@@ -44,8 +44,8 @@ Reset:
     	ldr     r0,=0x30000000      	    		@1. 目标地址=0x30000000，这是SDRAM的起始地址
     	mov     r1,#4096           			@2.  源地址 = 4096，连接的时候，代码都存在NAND Flash地址4096开始处
     	ldr     r2,=_text_start          	
-    	ldr	r3,=_bss_start				
-    	sub	r2,r3,r2				@3.  复制长度= _bss_start - _text_start(bytes)
+    	ldr	r3,=_bss_end				
+    	sub	r2,r3,r2				@3.  复制长度= _bss_end - _text_start(bytes)
     	add 	r2,r2,#2048
     	mov	r3,#0
     	add	r3,r3,r2,LSR #11

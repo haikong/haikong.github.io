@@ -33,7 +33,7 @@ void mac_send_pack(unsigned char *datas,unsigned int length,e_MAC_PROTO proto)
 	MACBUF->type = htons(proto);
 	memcpy(mac_packet + 14,datas,length); 
 	memcpy(mac_packet,packhead,14); //将 14 字节 MAC 报头复制到 Buffer 前面
-	DM9000_sendPacket(NULL,(char*)mac_packet,length+14);
+	DM9000_sendPacket((char*)mac_packet,length+14);
 }
 
 /*****************************************************************************
