@@ -25,7 +25,7 @@ void DMA_memcpy(void* p_dst,const void* p_src,int len);
 void DMA_UART(void* p_dst,const void* p_src,unsigned int len,unsigned char mode,unsigned char m_flag);
 /*just test for dma_uart*/
 void dma_uart_test(void);
-void Dma0_Handle(void);
+void Dma0_Handle(unsigned int vector);
 
 #ifdef	__cplusplus
 }

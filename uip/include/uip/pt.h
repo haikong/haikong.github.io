@@ -49,7 +49,7 @@
 #ifndef __PT_H__
 #define __PT_H__
 
-#include "lc.h"
+#include "uip/lc.h"
 
 struct pt {
   lc_t lc;

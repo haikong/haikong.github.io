@@ -42,7 +42,7 @@
 #ifndef __UIP_NEIGHBOR_H__
 #define __UIP_NEIGHBOR_H__
 
-#include "uip.h"
+#include "uip/uip.h"
 
 struct uip_neighbor_addr {
 #if UIP_NEIGHBOR_CONF_ADDRTYPE
@@ -50,6 +50,20 @@ struct uip_neighbor_addr {
 #else
   struct uip_eth_addr addr;
 #endif
+};
+
+#define MAX_TIME 128
+
+#ifdef UIP_NEIGHBOR_CONF_ENTRIES
+#define ENTRIES UIP_NEIGHBOR_CONF_ENTRIES
+#else /* UIP_NEIGHBOR_CONF_ENTRIES */
+#define ENTRIES 8
+#endif /* UIP_NEIGHBOR_CONF_ENTRIES */
+
+struct neighbor_entry {
+  uip_ipaddr_t ipaddr;
+  struct uip_neighbor_addr addr;
+  u8_t time;
 };
 
 void uip_neighbor_init(void);

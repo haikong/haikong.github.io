@@ -53,19 +53,13 @@
 #ifndef __UIP_H__
 #define __UIP_H__
 
-#include "uipopt.h"
+#include "uip/uip-conf.h"
+#include "uip/uipopt.h"
+#include "uip/uip_app.h"
+#include "uip/uip_type.h"
+#include "uip/uipram_vdcl.h"
 
-/**
- * Repressentation of an IP address.
- *
- */
-typedef u16_t uip_ip4addr_t[2];
-typedef u16_t uip_ip6addr_t[8];
-#if UIP_CONF_IPV6
-typedef uip_ip6addr_t uip_ipaddr_t;
-#else /* UIP_CONF_IPV6 */
-typedef uip_ip4addr_t uip_ipaddr_t;
-#endif /* UIP_CONF_IPV6 */
+#include <string.h>
 
 /*---------------------------------------------------------------------------*/
 /* First, the functions that should be called from the
@@ -173,30 +167,6 @@ typedef uip_ip4addr_t uip_ipaddr_t;
 /** @} */
 
 /**
- * \defgroup uipinit uIP initialization functions
- * @{
- *
- * The uIP initialization functions are used for booting uIP.
- */
-
-/**
- * uIP initialization function.
- *
- * This function should be called at boot up to initilize the uIP
- * TCP/IP stack.
- */
-void uip_init(void);
-
-/**
- * uIP initialization function.
- *
- * This function may be used at boot time to set the initial ip_id.
- */
-void uip_setipid(u16_t id);
-
-/** @} */
-
-/**
  * \defgroup uipdevfunc uIP device driver functions
  * @{
  *
@@ -298,7 +268,7 @@ void uip_setipid(u16_t id);
  *
  * \hideinitializer
  */
-#define uip_periodic(conn) do { uip_conn = &uip_conns[conn]; \
+#define uip_periodic(conn) do { g_uip_conn = &uip_conns[conn]; \
                                 uip_process(UIP_TIMER); } while (0)
 
 /**
@@ -320,7 +290,7 @@ void uip_setipid(u16_t id);
  *
  * \hideinitializer
  */
-#define uip_periodic_conn(conn) do { uip_conn = conn; \
+#define uip_periodic_conn(conn) do { g_uip_conn = conn; \
                                      uip_process(UIP_TIMER); } while (0)
 
 /**
@@ -334,7 +304,7 @@ void uip_setipid(u16_t id);
  *
  * \hideinitializer
  */
-#define uip_poll_conn(conn) do { uip_conn = conn; \
+#define uip_poll_conn(conn) do { g_uip_conn = conn; \
                                  uip_process(UIP_POLL_REQUEST); } while (0)
 
 
@@ -419,84 +389,8 @@ void uip_setipid(u16_t id);
  }
  \endcode
  */
-extern u8_t uip_buf[UIP_BUFSIZE+2];
 
 /** @} */
-
-/*---------------------------------------------------------------------------*/
-/* Functions that are used by the uIP application program. Opening and
- * closing connections, sending and receiving data, etc. is all
- * handled by the functions below.
-*/
-/**
- * \defgroup uipappfunc uIP application functions
- * @{
- *
- * Functions used by an application running of top of uIP.
- */
-
-/**
- * Start listening to the specified port.
- *
- * \note Since this function expects the port number in network byte
- * order, a conversion using HTONS() or htons() is necessary.
- *
- \code
- uip_listen(HTONS(80));
- \endcode
- *
- * \param port A 16-bit port number in network byte order.
- */
-void uip_listen(u16_t port);
-
-/**
- * Stop listening to the specified port.
- *
- * \note Since this function expects the port number in network byte
- * order, a conversion using HTONS() or htons() is necessary.
- *
- \code
- uip_unlisten(HTONS(80));
- \endcode
- *
- * \param port A 16-bit port number in network byte order.
- */
-void uip_unlisten(u16_t port);
-
-/**
- * Connect to a remote host using TCP.
- *
- * This function is used to start a new connection to the specified
- * port on the specied host. It allocates a new connection identifier,
- * sets the connection to the SYN_SENT state and sets the
- * retransmission timer to 0. This will cause a TCP SYN segment to be
- * sent out the next time this connection is periodically processed,
- * which usually is done within 0.5 seconds after the call to
- * uip_connect().
- *
- * \note This function is avaliable only if support for active open
- * has been configured by defining UIP_ACTIVE_OPEN to 1 in uipopt.h.
- *
- * \note Since this function requires the port number to be in network
- * byte order, a conversion using HTONS() or htons() is necessary.
- *
- \code
- uip_ipaddr_t ipaddr;
-
- uip_ipaddr(&ipaddr, 192,168,1,2);
- uip_connect(&ipaddr, HTONS(80));
- \endcode
- *
- * \param ripaddr The IP address of the remote hot.
- *
- * \param port A 16-bit port number in network byte order.
- *
- * \return A pointer to the uIP connection identifier for the new connection,
- * or NULL if no connection could be allocated.
- *
- */
-struct uip_conn *uip_connect(uip_ipaddr_t *ripaddr, u16_t port);
-
 
 
 /**
@@ -509,33 +403,6 @@ struct uip_conn *uip_connect(uip_ipaddr_t *ripaddr, u16_t port);
  * \hideinitializer
  */
 #define uip_outstanding(conn) ((conn)->len)
-
-/**
- * Send data on the current connection.
- *
- * This function is used to send out a single segment of TCP
- * data. Only applications that have been invoked by uIP for event
- * processing can send data.
- *
- * The amount of data that actually is sent out after a call to this
- * funcion is determined by the maximum amount of data TCP allows. uIP
- * will automatically crop the data so that only the appropriate
- * amount of data is sent. The function uip_mss() can be used to query
- * uIP for the amount of data that actually will be sent.
- *
- * \note This function does not guarantee that the sent data will
- * arrive at the destination. If the data is lost in the network, the
- * application will be invoked with the uip_rexmit() event being
- * set. The application will then have to resend the data using this
- * function.
- *
- * \param data A pointer to the data which is to be sent.
- *
- * \param len The maximum amount of data bytes to be sent.
- *
- * \hideinitializer
- */
-void uip_send(const void *data, int len);
 
 /**
  * The length of any incoming data that is currently avaliable (if avaliable)
@@ -588,7 +455,7 @@ void uip_send(const void *data, int len);
  *
  * \hideinitializer
  */
-#define uip_stop()          (uip_conn->tcpstateflags |= UIP_STOPPED)
+#define uip_stop()          (g_uip_conn->tcpstateflags |= UIP_STOPPED)
 
 /**
  * Find out if the current connection has been previously stopped with
@@ -608,7 +475,7 @@ void uip_send(const void *data, int len);
  * \hideinitializer
  */
 #define uip_restart()         do { uip_flags |= UIP_NEWDATA; \
-                                   uip_conn->tcpstateflags &= ~UIP_STOPPED; \
+                                   g_uip_conn->tcpstateflags &= ~UIP_STOPPED; \
                               } while(0)
 
 
@@ -623,7 +490,7 @@ void uip_send(const void *data, int len);
  * \hideinitializer
  *
  */
-#define uip_udpconnection() (uip_conn == NULL)
+#define uip_udpconnection() (g_uip_conn == NULL)
 
 /**
  * Is new incoming data available?
@@ -721,7 +588,7 @@ void uip_send(const void *data, int len);
  *
  * \hideinitializer
  */
-#define uip_initialmss()             (uip_conn->initialmss)
+#define uip_initialmss()             (g_uip_conn->initialmss)
 
 /**
  * Get the current maxium segment size that can be sent on the current
@@ -734,36 +601,7 @@ void uip_send(const void *data, int len);
  *
  * \hideinitializer
  */
-#define uip_mss()             (uip_conn->mss)
-
-/**
- * Set up a new UDP connection.
- *
- * This function sets up a new UDP connection. The function will
- * automatically allocate an unused local port for the new
- * connection. However, another port can be chosen by using the
- * uip_udp_bind() call, after the uip_udp_new() function has been
- * called.
- *
- * Example:
- \code
- uip_ipaddr_t addr;
- struct uip_udp_conn *c;
- 
- uip_ipaddr(&addr, 192,168,2,1);
- c = uip_udp_new(&addr, HTONS(12345));
- if(c != NULL) {
-   uip_udp_bind(c, HTONS(12344));
- }
- \endcode
- * \param ripaddr The IP address of the remote host.
- *
- * \param rport The remote port number in network byte order.
- *
- * \return The uip_udp_conn structure for the new connection or NULL
- * if no connection could be allocated.
- */
-struct uip_udp_conn *uip_udp_new(uip_ipaddr_t *ripaddr, u16_t rport);
+#define uip_mss()     (g_uip_conn->mss)
 
 /**
  * Removed a UDP connection.
@@ -1054,256 +892,6 @@ struct uip_udp_conn *uip_udp_new(uip_ipaddr_t *ripaddr, u16_t rport);
  */
 #define uip_ipaddr4(addr) (htons(((u16_t *)(addr))[1]) & 0xff)
 
-/**
- * Convert 16-bit quantity from host byte order to network byte order.
- *
- * This macro is primarily used for converting constants from host
- * byte order to network byte order. For converting variables to
- * network byte order, use the htons() function instead.
- *
- * \hideinitializer
- */
-#ifndef HTONS
-#   if UIP_BYTE_ORDER == UIP_BIG_ENDIAN
-#      define HTONS(n) (n)
-#   else /* UIP_BYTE_ORDER == UIP_BIG_ENDIAN */
-#      define HTONS(n) (u16_t)((((u16_t) (n)) << 8) | (((u16_t) (n)) >> 8))
-#   endif /* UIP_BYTE_ORDER == UIP_BIG_ENDIAN */
-#else
-#error "HTONS already defined!"
-#endif /* HTONS */
-
-/**
- * Convert 16-bit quantity from host byte order to network byte order.
- *
- * This function is primarily used for converting variables from host
- * byte order to network byte order. For converting constants to
- * network byte order, use the HTONS() macro instead.
- */
-#ifndef htons
-u16_t htons(u16_t val);
-#endif /* htons */
-#ifndef ntohs
-#define ntohs htons
-#endif
-
-/** @} */
-
-/**
- * Pointer to the application data in the packet buffer.
- *
- * This pointer points to the application data when the application is
- * called. If the application wishes to send data, the application may
- * use this space to write the data into before calling uip_send().
- */
-extern void *uip_appdata;
-
-#if UIP_URGDATA > 0
-/* u8_t *uip_urgdata:
- *
- * This pointer points to any urgent data that has been received. Only
- * present if compiled with support for urgent data (UIP_URGDATA).
- */
-extern void *uip_urgdata;
-#endif /* UIP_URGDATA > 0 */
-
-
-/**
- * \defgroup uipdrivervars Variables used in uIP device drivers
- * @{
- *
- * uIP has a few global variables that are used in device drivers for
- * uIP.
- */
-
-/**
- * The length of the packet in the uip_buf buffer.
- *
- * The global variable uip_len holds the length of the packet in the
- * uip_buf buffer.
- *
- * When the network device driver calls the uIP input function,
- * uip_len should be set to the length of the packet in the uip_buf
- * buffer.
- *
- * When sending packets, the device driver should use the contents of
- * the uip_len variable to determine the length of the outgoing
- * packet.
- *
- */
-extern u16_t uip_len;
-
-/** @} */
-
-#if UIP_URGDATA > 0
-extern u16_t uip_urglen, uip_surglen;
-#endif /* UIP_URGDATA > 0 */
-
-
-/**
- * Representation of a uIP TCP connection.
- *
- * The uip_conn structure is used for identifying a connection. All
- * but one field in the structure are to be considered read-only by an
- * application. The only exception is the appstate field whos purpose
- * is to let the application store application-specific state (e.g.,
- * file pointers) for the connection. The type of this field is
- * configured in the "uipopt.h" header file.
- */
-struct uip_conn {
-  uip_ipaddr_t ripaddr;   /**< The IP address of the remote host. */
-  
-  u16_t lport;        /**< The local TCP port, in network byte order. */
-  u16_t rport;        /**< The local remote TCP port, in network byte
-			 order. */
-  
-  u8_t rcv_nxt[4];    /**< The sequence number that we expect to
-			 receive next. */
-  u8_t snd_nxt[4];    /**< The sequence number that was last sent by
-                         us. */
-  u16_t len;          /**< Length of the data that was previously sent. */
-  u16_t mss;          /**< Current maximum segment size for the
-			 connection. */
-  u16_t initialmss;   /**< Initial maximum segment size for the
-			 connection. */
-  u8_t sa;            /**< Retransmission time-out calculation state
-			 variable. */
-  u8_t sv;            /**< Retransmission time-out calculation state
-			 variable. */
-  u8_t rto;           /**< Retransmission time-out. */
-  u8_t tcpstateflags; /**< TCP state and flags. */
-  u8_t timer;         /**< The retransmission timer. */
-  u8_t nrtx;          /**< The number of retransmissions for the last
-			 segment sent. */
-
-  /** The application state. */
-  uip_tcp_appstate_t appstate;
-};
-
-
-/**
- * Pointer to the current TCP connection.
- *
- * The uip_conn pointer can be used to access the current TCP
- * connection.
- */
-extern struct uip_conn *uip_conn;
-/* The array containing all uIP connections. */
-extern struct uip_conn uip_conns[UIP_CONNS];
-/**
- * \addtogroup uiparch
- * @{
- */
-
-/**
- * 4-byte array used for the 32-bit sequence number calculations.
- */
-extern u8_t uip_acc32[4];
-
-/** @} */
-
-
-#if UIP_UDP
-/**
- * Representation of a uIP UDP connection.
- */
-struct uip_udp_conn {
-  uip_ipaddr_t ripaddr;   /**< The IP address of the remote peer. */
-  u16_t lport;        /**< The local port number in network byte order. */
-  u16_t rport;        /**< The remote port number in network byte order. */
-  u8_t  ttl;          /**< Default time-to-live. */
-
-  /** The application state. */
-  uip_udp_appstate_t appstate;
-};
-
-/**
- * The current UDP connection.
- */
-extern struct uip_udp_conn *uip_udp_conn;
-extern struct uip_udp_conn uip_udp_conns[UIP_UDP_CONNS];
-#endif /* UIP_UDP */
-
-/**
- * The structure holding the TCP/IP statistics that are gathered if
- * UIP_STATISTICS is set to 1.
- *
- */
-struct uip_stats {
-  struct {
-    uip_stats_t drop;     /**< Number of dropped packets at the IP
-			     layer. */
-    uip_stats_t recv;     /**< Number of received packets at the IP
-			     layer. */
-    uip_stats_t sent;     /**< Number of sent packets at the IP
-			     layer. */
-    uip_stats_t vhlerr;   /**< Number of packets dropped due to wrong
-			     IP version or header length. */
-    uip_stats_t hblenerr; /**< Number of packets dropped due to wrong
-			     IP length, high byte. */
-    uip_stats_t lblenerr; /**< Number of packets dropped due to wrong
-			     IP length, low byte. */
-    uip_stats_t fragerr;  /**< Number of packets dropped since they
-			     were IP fragments. */
-    uip_stats_t chkerr;   /**< Number of packets dropped due to IP
-			     checksum errors. */
-    uip_stats_t protoerr; /**< Number of packets dropped since they
-			     were neither ICMP, UDP nor TCP. */
-  } ip;                   /**< IP statistics. */
-  struct {
-    uip_stats_t drop;     /**< Number of dropped ICMP packets. */
-    uip_stats_t recv;     /**< Number of received ICMP packets. */
-    uip_stats_t sent;     /**< Number of sent ICMP packets. */
-    uip_stats_t typeerr;  /**< Number of ICMP packets with a wrong
-			     type. */
-  } icmp;                 /**< ICMP statistics. */
-  struct {
-    uip_stats_t drop;     /**< Number of dropped TCP segments. */
-    uip_stats_t recv;     /**< Number of recived TCP segments. */
-    uip_stats_t sent;     /**< Number of sent TCP segments. */
-    uip_stats_t chkerr;   /**< Number of TCP segments with a bad
-			     checksum. */
-    uip_stats_t ackerr;   /**< Number of TCP segments with a bad ACK
-			     number. */
-    uip_stats_t rst;      /**< Number of recevied TCP RST (reset) segments. */
-    uip_stats_t rexmit;   /**< Number of retransmitted TCP segments. */
-    uip_stats_t syndrop;  /**< Number of dropped SYNs due to too few
-			     connections was avaliable. */
-    uip_stats_t synrst;   /**< Number of SYNs for closed ports,
-			     triggering a RST. */
-  } tcp;                  /**< TCP statistics. */
-#if UIP_UDP
-  struct {
-    uip_stats_t drop;     /**< Number of dropped UDP segments. */
-    uip_stats_t recv;     /**< Number of recived UDP segments. */
-    uip_stats_t sent;     /**< Number of sent UDP segments. */
-    uip_stats_t chkerr;   /**< Number of UDP segments with a bad
-			     checksum. */
-  } udp;                  /**< UDP statistics. */
-#endif /* UIP_UDP */
-};
-
-/**
- * The uIP TCP/IP statistics.
- *
- * This is the variable in which the uIP TCP/IP statistics are gathered.
- */
-extern struct uip_stats uip_stat;
-
-
-/*---------------------------------------------------------------------------*/
-/* All the stuff below this point is internal to uIP and should not be
- * used directly by an application or by a device driver.
- */
-/*---------------------------------------------------------------------------*/
-/* u8_t uip_flags:
- *
- * When the application is called, uip_flags will contain the flags
- * that are defined in this file. Please read below for more
- * infomation.
- */
-extern u8_t uip_flags;
-
 /* The following flags may be set in the global variable uip_flags
    before calling the application callback. The UIP_ACKDATA,
    UIP_NEWDATA, and UIP_CLOSE flags may both be set at the same time,
@@ -1340,12 +928,6 @@ extern u8_t uip_flags;
 #define UIP_TIMEDOUT  128   /* The connection has been aborted due to
 			       too many retransmissions. */
 
-/* uip_process(flag):
- *
- * The actual uIP function which does all the work.
- */
-void uip_process(u8_t flag);
-
 /* The following flags are passed as an argument to the uip_process()
    function. They are used to distinguish between the two cases where
    uip_process() is called. It can be called either because we have
@@ -1381,113 +963,6 @@ void uip_process(u8_t flag);
 #define UIP_TS_MASK     15
   
 #define UIP_STOPPED      16
-
-/* The TCP and IP headers. */
-struct uip_tcpip_hdr {
-#if UIP_CONF_IPV6
-  /* IPv6 header. */
-  u8_t vtc,
-    tcflow;
-  u16_t flow;
-  u8_t len[2];
-  u8_t proto, ttl;
-  uip_ip6addr_t srcipaddr, destipaddr;
-#else /* UIP_CONF_IPV6 */
-  /* IPv4 header. */
-  u8_t vhl,
-    tos,
-    len[2],
-    ipid[2],
-    ipoffset[2],
-    ttl,
-    proto;
-  u16_t ipchksum;
-  u16_t srcipaddr[2],
-    destipaddr[2];
-#endif /* UIP_CONF_IPV6 */
-  
-  /* TCP header. */
-  u16_t srcport,
-    destport;
-  u8_t seqno[4],
-    ackno[4],
-    tcpoffset,
-    flags,
-    wnd[2];
-  u16_t tcpchksum;
-  u8_t urgp[2];
-  u8_t optdata[4];
-};
-
-/* The ICMP and IP headers. */
-struct uip_icmpip_hdr {
-#if UIP_CONF_IPV6
-  /* IPv6 header. */
-  u8_t vtc,
-    tcf;
-  u16_t flow;
-  u8_t len[2];
-  u8_t proto, ttl;
-  uip_ip6addr_t srcipaddr, destipaddr;
-#else /* UIP_CONF_IPV6 */
-  /* IPv4 header. */
-  u8_t vhl,
-    tos,
-    len[2],
-    ipid[2],
-    ipoffset[2],
-    ttl,
-    proto;
-  u16_t ipchksum;
-  u16_t srcipaddr[2],
-    destipaddr[2];
-#endif /* UIP_CONF_IPV6 */
-  
-  /* ICMP (echo) header. */
-  u8_t type, icode;
-  u16_t icmpchksum;
-#if !UIP_CONF_IPV6
-  u16_t id, seqno;
-#else /* !UIP_CONF_IPV6 */
-  u8_t flags, reserved1, reserved2, reserved3;
-  u8_t icmp6data[16];
-  u8_t options[1];
-#endif /* !UIP_CONF_IPV6 */
-};
-
-
-/* The UDP and IP headers. */
-struct uip_udpip_hdr {
-#if UIP_CONF_IPV6
-  /* IPv6 header. */
-  u8_t vtc,
-    tcf;
-  u16_t flow;
-  u8_t len[2];
-  u8_t proto, ttl;
-  uip_ip6addr_t srcipaddr, destipaddr;
-#else /* UIP_CONF_IPV6 */
-  /* IP header. */
-  u8_t vhl,
-    tos,
-    len[2],
-    ipid[2],
-    ipoffset[2],
-    ttl,
-    proto;
-  u16_t ipchksum;
-  u16_t srcipaddr[2],
-    destipaddr[2];
-#endif /* UIP_CONF_IPV6 */
-  
-  /* UDP header. */
-  u16_t srcport,
-    destport;
-  u16_t udplen;
-  u16_t udpchksum;
-};
-
-
 
 /**
  * The buffer size available for user data in the \ref uip_buf buffer.
@@ -1526,22 +1001,188 @@ struct uip_udpip_hdr {
 							  TCP
 							  header */
 #define UIP_TCPIP_HLEN UIP_IPTCPH_LEN
+/*---------------------------------------------------------------------------*/
+/* Functions that are used by the uIP application program. Opening and
+* closing connections, sending and receiving data, etc. is all
+* handled by the functions below.
+*/
+/**
+ * \defgroup uipinit uIP initialization functions
+ * @{
+ *
+ * The uIP initialization functions are used for booting uIP.
+ */
 
+/**
+ * uIP initialization function.
+ *
+ * This function should be called at boot up to initilize the uIP
+ * TCP/IP stack.
+ */
+void uip_init(void);
 
-#if UIP_FIXEDADDR
-extern const uip_ipaddr_t uip_hostaddr, uip_netmask, uip_draddr;
-#else /* UIP_FIXEDADDR */
-extern uip_ipaddr_t uip_hostaddr, uip_netmask, uip_draddr;
-#endif /* UIP_FIXEDADDR */
+/**
+ * uIP initialization function.
+ *
+ * This function may be used at boot time to set the initial ip_id.
+ */
+void uip_setipid(u16_t id);
+	
+/** @} */
+
+/**
+ * \defgroup uipappfunc uIP application functions
+ * @{
+ *
+ * Functions used by an application running of top of uIP.
+ */
+
+/**
+ * Start listening to the specified port.
+ *
+ * \note Since this function expects the port number in network byte
+ * order, a conversion using HTONS() or htons() is necessary.
+ *
+ \code
+ uip_listen(HTONS(80));
+ \endcode
+ *
+ * \param port A 16-bit port number in network byte order.
+ */
+void uip_listen(u16_t port);
+
+/**
+ * Stop listening to the specified port.
+ *
+ * \note Since this function expects the port number in network byte
+ * order, a conversion using HTONS() or htons() is necessary.
+ *
+ \code
+ uip_unlisten(HTONS(80));
+ \endcode
+ *
+ * \param port A 16-bit port number in network byte order.
+ */
+void uip_unlisten(u16_t port);
+
+/**
+ * Connect to a remote host using TCP.
+ *
+ * This function is used to start a new connection to the specified
+ * port on the specied host. It allocates a new connection identifier,
+ * sets the connection to the SYN_SENT state and sets the
+ * retransmission timer to 0. This will cause a TCP SYN segment to be
+ * sent out the next time this connection is periodically processed,
+ * which usually is done within 0.5 seconds after the call to
+ * uip_connect().
+ *
+ * \note This function is avaliable only if support for active open
+ * has been configured by defining UIP_ACTIVE_OPEN to 1 in uipopt.h.
+ *
+ * \note Since this function requires the port number to be in network
+ * byte order, a conversion using HTONS() or htons() is necessary.
+ *
+ \code
+ uip_ipaddr_t ipaddr;
+
+ uip_ipaddr(&ipaddr, 192,168,1,2);
+ uip_connect(&ipaddr, HTONS(80));
+ \endcode
+ *
+ * \param ripaddr The IP address of the remote hot.
+ *
+ * \param port A 16-bit port number in network byte order.
+ *
+ * \return A pointer to the uIP connection identifier for the new connection,
+ * or NULL if no connection could be allocated.
+ *
+ */
+struct uip_conn *uip_connect(uip_ipaddr_t *ripaddr, u16_t port);
 
 
 
 /**
- * Representation of a 48-bit Ethernet address.
+ * Send data on the current connection.
+ *
+ * This function is used to send out a single segment of TCP
+ * data. Only applications that have been invoked by uIP for event
+ * processing can send data.
+ *
+ * The amount of data that actually is sent out after a call to this
+ * funcion is determined by the maximum amount of data TCP allows. uIP
+ * will automatically crop the data so that only the appropriate
+ * amount of data is sent. The function uip_mss() can be used to query
+ * uIP for the amount of data that actually will be sent.
+ *
+ * \note This function does not guarantee that the sent data will
+ * arrive at the destination. If the data is lost in the network, the
+ * application will be invoked with the uip_rexmit() event being
+ * set. The application will then have to resend the data using this
+ * function.
+ *
+ * \param data A pointer to the data which is to be sent.
+ *
+ * \param len The maximum amount of data bytes to be sent.
+ *
+ * \hideinitializer
  */
-struct uip_eth_addr {
-  u8_t addr[6];
-};
+void uip_send(const void *data, int len);
+
+/**
+ * Set up a new UDP connection.
+ *
+ * This function sets up a new UDP connection. The function will
+ * automatically allocate an unused local port for the new
+ * connection. However, another port can be chosen by using the
+ * uip_udp_bind() call, after the uip_udp_new() function has been
+ * called.
+ *
+ * Example:
+ \code
+ uip_ipaddr_t addr;
+ struct uip_udp_conn *c;
+ 
+ uip_ipaddr(&addr, 192,168,2,1);
+ c = uip_udp_new(&addr, HTONS(12345));
+ if(c != NULL) {
+   uip_udp_bind(c, HTONS(12344));
+ }
+ \endcode
+ * \param ripaddr The IP address of the remote host.
+ *
+ * \param rport The remote port number in network byte order.
+ *
+ * \return The uip_udp_conn structure for the new connection or NULL
+ * if no connection could be allocated.
+ */
+struct uip_udp_conn *uip_udp_new(uip_ipaddr_t *ripaddr, u16_t rport);
+
+/* uip_process(flag):
+ *
+ * The actual uIP function which does all the work.
+ */
+void uip_process(u8_t flag);
+
+/**
+ * Carry out a 32-bit addition.
+ *
+ * Because not all architectures for which uIP is intended has native
+ * 32-bit arithmetic, uIP uses an external C function for doing the
+ * required 32-bit additions in the TCP protocol processing. This
+ * function should add the two arguments and place the result in the
+ * global variable uip_acc32.
+ *
+ * \note The 32-bit integer pointed to by the op32 parameter and the
+ * result in the uip_acc32 variable are in network byte order (big
+ * endian).
+ *
+ * \param op32 A pointer to a 4-byte array representing a 32-bit
+ * integer in network byte order (big endian).
+ *
+ * \param op16 A 16-bit integer in host byte order.
+ */
+
+void uip_add32(u8_t *op32, u16_t op16,u8_t uip_acc32[4]);
 
 /**
  * Calculate the Internet checksum over a buffer.
@@ -1593,6 +1234,10 @@ u16_t uip_tcpchksum(void);
  * to by uip_appdata.
  */
 u16_t uip_udpchksum(void);
+
+#ifndef UIP_APPCALL
+#define UIP_APPCALL() uip_app()
+#endif /* UIP_APPCALL */
 
 
 #endif /* __UIP_H__ */

@@ -1,2 +1,1 @@
-syscall.o syscall.d : syscall.c \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/syscall.h
+syscall.o syscall.d : syscall.c /home/haikong/app/dm9000/include/syscall.h

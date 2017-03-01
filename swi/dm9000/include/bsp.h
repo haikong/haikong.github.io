@@ -81,6 +81,6 @@ typedef struct bd_info {
 } bd_t;
 /*section macro*/
 #define _init_data __attribute__((__section__(".init_data")))
-void  smdk2440_machine_init(void);
+int  smdk2440_machine_init(void);
 
 #endif

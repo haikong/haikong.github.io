@@ -91,6 +91,13 @@ extern "C"{
 #define	TCNTB0		(*(volatile unsigned long *)0x5100000c)
 #define	TCMPB0		(*(volatile unsigned long *)0x51000010)
 #define	TCNTO0		(*(volatile unsigned long *)0x51000014)
+#define	TCNTB1		(*(volatile unsigned long *)0x51000018)
+#define	TCMPB1		(*(volatile unsigned long *)0x5100001c)
+#define	TCNTO1		(*(volatile unsigned long *)0x51000020)
+#define	TCNTB2		(*(volatile unsigned long *)0x51000024)
+#define	TCMPB2		(*(volatile unsigned long *)0x51000028)
+#define	TCNTO2		(*(volatile unsigned long *)0x5100002c)
+
 /*cpu id register*/
 #define GSTATUS1    (*(volatile unsigned long *)0x560000B0)
 /*DMA registers*/

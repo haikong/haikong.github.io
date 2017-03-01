@@ -78,7 +78,7 @@ void dma_irq_Handle(void)
 #endif
 
 /*dma0 interrupt handler*/
-static void Dma0_Handle(unsigned int vector)
+void Dma0_Handle(unsigned int vector)
 {
 	printf("finish the transport.\n");
 	/*set beep ring*/
@@ -199,7 +199,7 @@ void dma_uart_test(void)
 	ret = register_interrupt(17,Dma0_Handle);
 	if(ret)
 	{
-		printf("register dma int_handle error.\n");
+		printf("register dma int_handle error.\n\r");
 		return ;
 	}
     char temp[255] = "Hello world!This is a dma send buffer.\nHello world!This is a dma send buffer.\n";

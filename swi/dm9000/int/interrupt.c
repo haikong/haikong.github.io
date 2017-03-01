@@ -108,7 +108,7 @@ int register_extern_int( unsigned int vector_num,void (*vector_handle)(unsigned 
 {
     
     if((vector_num > (EXTERN_MAX_IRQ - 1)) || (vector_num < 4)){
-        printf("Invalid inteerupt vector num.\n");
+        printf("Invalid inteerupt vector num.\n\r");
         return -1;
     }
     externINT_handle_array[vector_num] = vector_handle;

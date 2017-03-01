@@ -81,8 +81,39 @@
 #ifndef __PSOCK_H__
 #define __PSOCK_H__
 
-#include "uipopt.h"
-#include "pt.h"
+#include "uip/uipopt.h"
+#include "uip/pt.h"
+
+
+#define STATE_NONE 0
+#define STATE_ACKED 1
+#define STATE_READ 2
+#define STATE_BLOCKED_NEWDATA 3
+#define STATE_BLOCKED_CLOSE 4
+#define STATE_BLOCKED_SEND 5
+#define STATE_DATA_SENT 6
+ 
+ /*
+  * Return value of the buffering functions that indicates that a
+  * buffer was not filled by incoming data.
+  *
+  */
+#define BUF_NOT_FULL 0
+#define BUF_NOT_FOUND 0
+ 
+ /*
+  * Return value of the buffering functions that indicates that a
+  * buffer was completely filled by incoming data.
+  *
+  */
+#define BUF_FULL 1
+ 
+ /*
+  * Return value of the buffering functions that indicates that an
+  * end-marker byte was found.
+  *
+  */
+#define BUF_FOUND 2
 
  /*
  * The structure that holds the state of a buffer.

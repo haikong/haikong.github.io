@@ -3,7 +3,9 @@
 #include <string.h>
 #include <dm9000.h>
 #include <stdio.h>
-
+#include <net.h>
+/*reading the dm9000 isr counters*/
+extern unsigned int g_dm9000_isr_count;
 //ARP协议格式的数组
 static unsigned char arpsendbuf[42]={
  
@@ -18,9 +20,9 @@ static unsigned char arpsendbuf[42]={
        0x00,0x01,                                        	//操作码：ARP请求
       
        0xaa,0xbb,0xcc,0xdd,0xee,0xff,        			//发送端以太网硬件地址
-       192, 168, 1, 6,                                 //发送端IP协议地址
+       192, 168, 1, 6,                                 	//发送端IP协议地址
        0x00,0x00,0x00,0x00,0x00,0x00,        			//接收端以太网硬件地址
-       192, 168, 1, 128                                 //接收端IP协议地址
+       192, 168, 1, 8                                 	//接收端IP协议地址
 };
 
 
@@ -41,6 +43,9 @@ static unsigned char arpsendbuf[42]={
 *****************************************************************************/
 void arp_test(void)
 {
+	unsigned int dm9000_isr_counter;
+	int len;
+	unsigned char buf[1000];
 #ifdef FILL_ARP
 	unsigned char mac_addr[6] = {0xaa,0xbb,0xcc,0xdd,0,0};
 	unsigned char ip_addr[4] = {192,168,1,6};
@@ -69,8 +74,21 @@ void arp_test(void)
 	printf("arp test\n\r");
 #else
 	DM9000_sendPacket((char*)arpsendbuf,42);
-	printf("arp_test:DM9000_sendPacket 42\n\r");	
+	printf("arp_test:DM9000_sendPacket 42 bytes.\n\r");	
 #endif
+	dm9000_isr_counter = 0;
+	while(1)
+	{
+		memset(buf,0,1000);
+
+		len = eth_recv(buf);
+		if(len >0)
+		{
+			DM9000_DMP_PACKET(__func__ , buf, len);	
+			arp_process((char*)buf,len);
+		}
+		len = 0;
+	}
 }
 
 
@@ -112,6 +130,7 @@ int arp_process(char* BUFF,unsigned int len)
 		ret = 0;
 		break;
 	default:
+		printf("other data infomation.\n\r");
 		ret = -1;
 		break;
 	}

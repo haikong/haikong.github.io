@@ -16,6 +16,7 @@
 #include <glob.h>
 #include <bsp.h>
 #include <net.h>
+#include "uip/uip_main.h"
 /*-O2优化时参数需加volatile,否则被优化为0*/
 static  inline void wait(volatile unsigned long time)
 {
@@ -146,7 +147,7 @@ int main(int argc,char** argv)
 	register_extern_int(EXTERNIRQ4,KeyINT2_Handle);	
 	//invoking timer0 initialize and enable timer0 handle	
 	register_interrupt(ISR_TIMER0_OFT,Timer0_Handle);	
-	timer_init();					
+	timer0_init();					
 	#endif
 	ret = smdk2440_machine_init();
 	if(ret != 0)
@@ -169,7 +170,8 @@ int main(int argc,char** argv)
 	test_dm9000();
 	wait(500000);	
 	test_dm9000();
-	arp_test();
+	//arp_test();
+	uip_exe();
 tail:	
 	while(1);
 	return 0;

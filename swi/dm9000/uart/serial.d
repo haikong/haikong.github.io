@@ -1,5 +1,5 @@
-serial.o serial.d : serial.c \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/s3c2440_addr.h \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/serial.h \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/stdio.h \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/types.h
+serial.o serial.d : serial.c /home/haikong/app/dm9000/include/s3c2440_addr.h \
+  /home/haikong/app/dm9000/include/serial.h \
+  /home/haikong/app/dm9000/include/stdio.h \
+  /home/haikong/app/dm9000/include/types.h \
+  /home/haikong/app/dm9000/include/serial.h

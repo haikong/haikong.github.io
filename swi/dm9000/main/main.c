@@ -148,24 +148,28 @@ int main(int argc,char** argv)
 	register_interrupt(ISR_TIMER0_OFT,Timer0_Handle);	
 	timer_init();					
 	#endif
-	smdk2440_machine_init();
-	ret = dm9000_initialize(NULL);
+	ret = smdk2440_machine_init();
 	if(ret != 0)
 	{
-		printf("dm9000_initialize error.\n");
+		goto tail;
+	}	
+	ret = dm9000_initialize();
+	if(ret != 0)
+	{
+		printf("dm9000_initialize error.\n\t");
 		goto tail;
 	}
 	ret = eth_init();
 	if(ret != 0)
 	{
-		printf("eth_init error.\n");
+		printf("eth_init error.\n\t");
 		goto tail;	
 	}	
 	wait(50000);
 	test_dm9000();
-	arp_test();
 	wait(500000);	
 	test_dm9000();
+	arp_test();
 tail:	
 	while(1);
 	return 0;

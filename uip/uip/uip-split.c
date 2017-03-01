@@ -35,30 +35,29 @@
 
 #include <string.h>
 
-#include "uip-split.h"
-#include "uip.h"
-#include "uip-fw.h"
-#include "uip_arch.h"
-
-
-
-#define BUF ((struct uip_tcpip_hdr *)&uip_buf[UIP_LLH_LEN])
+#include "uip/uip-split.h"
+#include "uip/uip.h"
+#include "uip/uip-fw.h"
+#include "uip/uip_arch.h"
+#include "uip/uipram_vdcl.h"
 
 /*-----------------------------------------------------------------------------*/
-void
-uip_split_output(void)
+void uip_split_output(void)
 {
   u16_t tcplen, len1, len2;
+  u8_t uip_acc32[4];
 
   /* We only try to split maximum sized TCP segments. */
-  if(BUF->proto == UIP_PROTO_TCP &&
-     uip_len == UIP_BUFSIZE - UIP_LLH_LEN) {
+  if((BUF->proto == UIP_PROTO_TCP) 
+  	  &&(uip_len == UIP_BUFSIZE - UIP_LLH_LEN)) 
+  {
 
     tcplen = uip_len - UIP_TCPIP_HLEN;
     /* Split the segment in two. If the original packet length was
        odd, we make the second packet one byte larger. */
     len1 = len2 = tcplen / 2;
-    if(len1 + len2 < tcplen) {
+    if(len1 + len2 < tcplen) 
+	{
       ++len2;
     }
 
@@ -87,7 +86,7 @@ uip_split_output(void)
     
     /* Transmit the first packet. */
     /*    uip_fw_output();*/
-    tcpip_output();
+    uip_fw_output();
 
     /* Now, create the second packet. To do this, it is not enough to
        just alter the length field, but we must also update the TCP
@@ -108,7 +107,7 @@ uip_split_output(void)
     /*    uip_appdata += len1;*/
     memcpy(uip_appdata, (u8_t *)uip_appdata + len1, len2);
 
-    uip_add32(BUF->seqno, len1);
+    uip_add32(BUF->seqno, len1,uip_acc32);
     BUF->seqno[0] = uip_acc32[0];
     BUF->seqno[1] = uip_acc32[1];
     BUF->seqno[2] = uip_acc32[2];
@@ -126,10 +125,10 @@ uip_split_output(void)
 
     /* Transmit the second packet. */
     /*    uip_fw_output();*/
-    tcpip_output();
+    uip_fw_output();
   } else {
     /*    uip_fw_output();*/
-    tcpip_output();
+    uip_fw_output();
   }
      
 }

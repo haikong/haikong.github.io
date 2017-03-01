@@ -34,13 +34,12 @@
  */
 
 
-#include "uip.h"
-#include "uiplib.h"
+#include "uip/uip.h"
+#include "uip/uiplib.h"
 
 
 /*-----------------------------------------------------------------------------------*/
-unsigned char
-uiplib_ipaddrconv(char *addrstr, unsigned char *ipaddr)
+unsigned char uiplib_ipaddrconv(char *addrstr, unsigned char *ipaddr)
 {
   unsigned char tmp;
   char c;
@@ -48,22 +47,30 @@ uiplib_ipaddrconv(char *addrstr, unsigned char *ipaddr)
 
   tmp = 0;
   
-  for(i = 0; i < 4; ++i) {
+  for(i = 0; i < 4; ++i) 
+  {
     j = 0;
-    do {
+    do 
+	{
       c = *addrstr;
       ++j;
-      if(j > 4) {
-	return 0;
+      if(j > 4) 
+	  {
+		return 0;
       }
-      if(c == '.' || c == 0) {
-	*ipaddr = tmp;
-	++ipaddr;
-	tmp = 0;
-      } else if(c >= '0' && c <= '9') {
-	tmp = (tmp * 10) + (c - '0');
-      } else {
-	return 0;
+      if((c == '.') || (c == 0)) 
+	  {
+		*ipaddr = tmp;
+		++ipaddr;
+		tmp = 0;
+      } 
+	  else if((c >= '0') && (c <= '9')) 
+	  {
+		tmp = (tmp * 10) + (c - '0');
+      } 
+	  else 
+	  {
+		return 0;
       }
       ++addrstr;
     } while(c != '.' && c != 0);

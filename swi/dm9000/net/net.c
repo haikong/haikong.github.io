@@ -99,9 +99,10 @@ int eth_register(struct eth_device *dev)
 	if (!eth_devices) {
 		eth_devices = dev;
 	} else {
-		for (d = eth_devices; d->next != eth_devices; d = d->next)
+		for (d = eth_devices; d->next != NULL; d = d->next)
 			;
 		d->next = dev;
+		dev->next = NULL;
 	}
 
 	dev->state = ETH_STATE_INIT;
@@ -163,15 +164,15 @@ int eth_unregister(struct eth_device *dev)
     修改内容   : 新生成函数
 
 *****************************************************************************/
-int  eth_init (void)
+int  eth_init(void)
 {
-	
+	int ret;
 	/* No device */
 	if (!eth_devices)
 		return -1;
 	current_ethdev = eth_devices;
-	current_ethdev->init();
-	return 0;
+	ret = current_ethdev->init();
+	return ret;
 }
 /*****************************************************************************
  函 数 名  : eth_send
@@ -192,7 +193,7 @@ int  eth_init (void)
 *****************************************************************************/
 int  eth_send(void *packet,unsigned int length)
 {
-		/* No device */
+	/* No device */
 	if (!current_ethdev)
 		return -1;
 	return current_ethdev->send(packet,length);
@@ -215,8 +216,10 @@ int  eth_send(void *packet,unsigned int length)
 *****************************************************************************/
 int  eth_recv( unsigned char* data_src )
 {
-
-	return 0;
+	int ret = -1;
+	if(current_ethdev != NULL)
+		ret = current_ethdev->recv(data_src);
+	return ret;
 }
 /*****************************************************************************
  函 数 名  : eth_halt
@@ -235,7 +238,8 @@ int  eth_recv( unsigned char* data_src )
 *****************************************************************************/
 void eth_halt(void)
 {
-
+	if(current_ethdev != NULL)
+		 current_ethdev->halt();
 }
 
 

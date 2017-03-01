@@ -25,7 +25,7 @@ export CFLAGS LDFLAGS
 TOPDIR := $(shell pwd)
 export TOPDIR
 
-TARGET := dm9000
+TARGET := uip
 
 obj-y := swi/
 obj-y += sys/
@@ -45,6 +45,7 @@ obj-y += net/
 obj-y += miscellaneous/
 obj-y += bsp/
 obj-y += platform/
+obj-y += uip/
 obj-y += main/
 
 all :

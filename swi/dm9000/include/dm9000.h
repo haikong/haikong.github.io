@@ -8,7 +8,7 @@
 //DM9000 base address for bank4 
 #define DM9000_CMD_BASE		(0x20000000)
 #define DM9000_DAT_BASE		(0x20000004)
-
+#define CONFIG_DM9000_NO_SROM		//dm9000 no srom
 #define DM9000_ID		0x90000A46	//dm9000 ID
 #define DM9000_PKT_MAX		1536	/* Received packet max size */
 #define DM9000_PKT_RDY		0x01	/* Packet ready to receive */
@@ -132,18 +132,18 @@ struct dm9000_plat_data {
 	void	(*dumpblk)(void  *reg, int len);
 };
 /* #define CONFIG_DM9000_DEBUG */
-
+#define CONFIG_DM9000_DEBUG
 #ifdef CONFIG_DM9000_DEBUG
 #define DM9000_DBG(fmt,args...) printf(fmt, ##args)
 #define DM9000_DMP_PACKET(func,packet,length)  \
 	do { \
 		int i; 							\
-		printf("%s: length: %d\n", func, length);		\
+		printf("%s: length: %d\n\r", func, length);		\
 		for (i = 0; i < length; i++) {				\
 			if (i % 8 == 0)					\
-				printf("\n%s: %02x: ", func, i);	\
+				printf("\n\r%s: %02x: ", func, i);	\
 			printf("%02x ", ((unsigned char *) packet)[i]);	\
-		} printf("\n");						\
+		} printf("\n\r");						\
 	} while(0)
 #else
 #define DM9000_DBG(fmt,args...)
@@ -162,7 +162,7 @@ void test_dm9000( void );
 int DM9000_Init(void);
 int DM9000_sendPacket(void* data_src, unsigned int length );
 void inline DM9000_reset( void );
-int dm9000_initialize(bd_t *bis);
+int dm9000_initialize(void);
 
 #endif
 

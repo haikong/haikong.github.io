@@ -10,6 +10,9 @@
 #include <platform.h>
 #include <string.h>
 #include <io.h> 
+
+/*The dm9000 iterrupt happends conter*/
+unsigned int g_dm9000_isr_count;
 /*glob platform devices*/
 extern t_platform_device *gt_platform_device;
 /*mac address*/
@@ -415,6 +418,7 @@ static int get_dm9000_resoures(void)
 {
 	int i,num,ret = 0;
 	t_platform_device *pdev;
+	struct dm9000_plat_data* resoure;
 	pdev = gt_platform_device;
 	/*select the devices*/
 	while(pdev != NULL)
@@ -450,6 +454,17 @@ static int get_dm9000_resoures(void)
 	}
 	
 	dm9000_info.netdev.priv = pdev->private_data;
+	resoure = (struct dm9000_plat_data*)dm9000_info.netdev.priv;
+	if(resoure == NULL)
+	{
+		memcpy(dm9000_info.netdev.enetaddr,mac_addr,6);
+		dm9000_info.netdev.flag	= (DM9000_PLATF_16BITONLY | DM9000_PLATF_NO_EEPROM);
+	}
+	else
+	{
+		memcpy(dm9000_info.netdev.enetaddr,resoure->dev_addr,6);
+		dm9000_info.netdev.flag = resoure->flags;
+	}
 	snprintf(dm9000_info.netdev.name,16,pdev->name);
 	dm9000_cmd_base = dm9000_info.netdev.iobase;
 	dm9000_data_base = dm9000_info.netdev.iobase + 4;	
@@ -505,13 +520,13 @@ void test_dm9000_ID( void )
 	vid |= DM9000_ior(VIDH) << 8;
 	pid = DM9000_ior(PIDL);
 	pid |= DM9000_ior(PIDH) << 8;
-	printf("VID = %x,PID = %x.\n\r",vid,pid);
-	printf("MAC = %x",DM9000_ior(PAR)&0x00ff);
+	printf("VID = 0x%x,PID = 0x%x.\n\r",vid,pid);
+	printf("MAC = 0x%x",DM9000_ior(PAR)&0x00ff);
 	printf(" %x",DM9000_ior(PAR+1)&0x00ff);
 	printf(" %x",DM9000_ior(PAR+2)&0x00ff);
 	printf(" %x",DM9000_ior(PAR+3)&0x00ff);
 	printf(" %x",DM9000_ior(PAR+4));
-	printf(" %x\r\n",DM9000_ior(PAR+5));
+	printf(" %x\n\r",DM9000_ior(PAR+5));
 
 }
 
@@ -532,6 +547,8 @@ void test_dm9000_ID( void )
 *****************************************************************************/
 static void dm9000_regs( void )
 {
+	int i,oft;
+	printf("Read the dm9000 registers' content:\n\r");
     printf("NCR = %x\n\r",DM9000_ior(NCR));
     printf("NSR = %x\n\r",DM9000_ior(NSR));
     printf("TCR = %x\n\r",DM9000_ior(TCR));
@@ -553,7 +570,11 @@ static void dm9000_regs( void )
     printf("SMCR = %x\n\r",DM9000_ior(SMCR));
     printf("ISR = %x\n\r",DM9000_ior(ISR));
 	printf("IMR = %x\n\r",DM9000_ior(IMR));
-	
+	printf("The dm9000 mac address: ");
+	/* read back mac, just to be sure */
+	for (i = 0, oft = PAR; i < 6; i++, oft++)
+		printf("%02x:", DM9000_ior(oft));
+	printf("\n\r");
 }
 
 /*****************************************************************************
@@ -574,7 +595,7 @@ static void dm9000_regs( void )
 void inline DM9000_reset( void )
 {
 
-	printf("resetting DM9000\n\t");
+	printf("resetting DM9000...\n\r");
 
 	/* DEBUG: Make all GPIO0 outputs, all others inputs */
 	DM9000_iow(GPCR, GPCR_GPIO0_OUT);
@@ -584,7 +605,7 @@ void inline DM9000_reset( void )
 	DM9000_iow(NCR, (NCR_LBK_INT_MAC | NCR_RST));
 
 	do {
-		printf("resetting the DM9000, 1st reset\n\t");
+		//printf("resetting the DM9000, 1st reset...\n\t");
 		udelay_us(25); /* Wait at least 20 us */
 	} while (DM9000_ior(NCR) & 1);
 
@@ -592,14 +613,14 @@ void inline DM9000_reset( void )
 	DM9000_iow(NCR, (NCR_LBK_INT_MAC | NCR_RST)); /* Issue a second reset */
 
 	do {
-		printf("resetting the DM9000, 2nd reset\n\t");
+		//printf("resetting the DM9000, 2nd reset...\n\t");
 		udelay_us(25); /* Wait at least 20 us */
 	} while (DM9000_ior(NCR) & 1);
 
 	/* Check whether the ethernet controller is present */
 	if ((DM9000_ior(PIDL) != 0x0) ||
 		(DM9000_ior(PIDH) != 0x90))
-		printf("ERROR: resetting DM9000 -> not responding\nt");
+		printf("ERROR: resetting DM9000 : not responding!\n\r");
   
 }
 
@@ -695,15 +716,16 @@ static int dm9000_revPacket(unsigned char* data_src )
 	//unsigned short data_temp=0;
 	//unsigned char i;//计数用
 	struct board_info *db = &dm9000_info;
-
 	/* Check packet ready or not, we must check
 	   the ISR status first for DM9000 */
 	if (!(DM9000_ior(ISR) & 0x01)) /* Rx-ISR bit must be set. */
+	{
+		DM9000_iow(IMR, 0x81);
 		return 0;
-	/* clear PR status latched in bit 0 */
-	DM9000_iow(ISR, 0x01); 
+	}	
 	/* There is _at least_ 1 package in the fifo, read them all */
-	for (;;) {
+	for (;;) 
+	{
 		DM9000_ior(MRCMDX);	/* Dummy read */
 
 		/* Get most updated data,
@@ -711,58 +733,70 @@ static int dm9000_revPacket(unsigned char* data_src )
 		RX_First_byte = DM9000_inb(dm9000_data_base) & 0x03;
 
 		/* Status check: this byte must be 0 or 1 */
-		if (RX_First_byte > DM9000_PKT_RDY) {
+		if (RX_First_byte > DM9000_PKT_RDY) 
+		{
 			DM9000_iow(RCR, 0x00);	/* Stop Device */
-			DM9000_iow(ISR, 0x80);	/* Stop INT request */
-			printf("DM9000 error: status check fail: 0x%x\n",RX_First_byte);
+			DM9000_iow(ISR, 0x01);	/* Stop INT request */
+			printf("DM9000 error: status check fail: 0x%x\n\r",RX_First_byte);
+			DM9000_iow(IMR, 0x81);
 			return 0;
 		}
 
 		if (RX_First_byte != DM9000_PKT_RDY)
+		{
+			DM9000_iow(ISR, 0x01);	/* Stop INT request */
+			DM9000_iow(IMR, 0x81);
 			return 0; /* No packet received, ignore */
-
-		printf("receiving packet\n");
+		}
+		printf("receiving packet\n\r");
 
 		/* A packet ready now  & Get status/length */
 		(db->rx_status)(&RX_status, &RX_length);
 
-		printf("rx status: 0x%04x rx len: %d\n", RX_status, RX_length);
+		printf("rx status: 0x%04x rx len: %d\n\r", RX_status, RX_length);
 
 		/* Move data from DM9000 */
 		/* Read received packet from RX SRAM */
 		(db->inblk)(data_src, RX_length);
 
-		if ((RX_status & 0xbf00) || (RX_length < 0x40)
-			|| (RX_length > DM9000_PKT_MAX)) {
+		if ((RX_status & 0xbf00) 
+			|| (RX_length < 0x40)
+			|| (RX_length > DM9000_PKT_MAX)
+			) 
+		{
 			if (RX_status & 0x100) {
-				printf("rx fifo error\n");
+				printf("rx fifo error\n\r");
 			}
 			if (RX_status & 0x200) {
-				printf("rx crc error\n");
+				printf("rx crc error\n\r");
 			}
 			if (RX_status & 0x8000) {
-				printf("rx length error\n");
+				printf("rx length error\n\r");
 			}
 			if (RX_length > DM9000_PKT_MAX) {
-				printf("rx length too big\n");
+				printf("rx length too big\n\r");
 				DM9000_reset();
 			}
-		} else {
-			DM9000_DMP_PACKET(__func__ , RX_status, RX_length);
-
-			DM9000_DBG("passing packet to upper layer\n");
+		} else 
+		{
+			DM9000_DBG("passing packet to upper layer.\n\r");
 			//NetReceive(NetRxPackets[0], RX_length);
+			/*just for test*/
+			break;
 		}
 	}
-	return 0;
+	/* clear PR status latched in bit 0 */
+	DM9000_iow(ISR, 0x01);
+	DM9000_iow(IMR, 0x81);	
+	return RX_length ;
 	
 #ifdef _DBG	
 	 //读取 RX SRAM 的第一个字节
 	 RX_First_byte = DM9000_ior(MRCMDX);//读取 RX SRAM 的第一个字节的值
-	 printf("RX_First_byte = 0x%x",RX_First_byte);
+	 printf("RX_First_byte = 0x%x\n\r",RX_First_byte);
 	//第一次读取经常得到 00
 	 RX_First_byte = DM9000_ior(MRCMDX);//第二次读取一般能得到数据
-	 printf("RX_First_byte = 0x%x",RX_First_byte);
+	 printf("RX_First_byte = 0x%x\n\r",RX_First_byte);
 	 //读取 RX SRAM 的第二、三、四个字节
 	 if(RX_First_byte == 0x01)
 	 {
@@ -772,9 +806,9 @@ static int dm9000_revPacket(unsigned char* data_src )
 	 	if(io_mode == 0)//IO word mode
 	 	{
 	 		RX_First_byte = DM9000_ior(dm9000_data_base);//读取接收状态寄存器的值
- 			printf("\r\nRX_First_byte = %d\r\nRX_status = %d\r\n",RX_First_byte&0x00ff,(RX_status>>8)&0x00ff);
+ 			printf("\r\nRX_First_byte = %d\n\rRX_status = %d\n\r",RX_First_byte&0x00ff,(RX_status>>8)&0x00ff);
 			RX_length = DM9000_ior(dm9000_data_base);//读取接收状态寄存器的值
-			printf("\r\nRX_length = %d\r\n",RX_length);
+			printf("\r\nRX_length = %d\n\r",RX_length);
 		}
 		else if(io_mode == 1)//IO dword mode
 		{
@@ -828,11 +862,9 @@ static int dm9000_revPacket(unsigned char* data_src )
 
 static void dm9000_isr(unsigned int vector)
 {
-	int i;
-	unsigned char buf[1000];
-	i = dm9000_revPacket(buf);
-	if(i >0)
-		arp_process((char*)buf,i);
+	g_dm9000_isr_count++;
+	printf("%s-%d:g_dm9000_isr_count=%d\n\r",__FUNCTION__,__LINE__,g_dm9000_isr_count);
+	DM9000_iow(IMR, 0x80);
 }
 
 /*****************************************************************************
@@ -850,15 +882,17 @@ static void dm9000_isr(unsigned int vector)
     修改内容   : 新生成函数
 
 *****************************************************************************/
-static void dm9000_gpio_init( void )
+static int dm9000_gpio_init( void )
 {
+	int ret;
     //setting dm9000 extern interrupt
 	key_init(dm9000_info.netdev.int_base,EXTINT);
 	//setting EINT7 is Rising edge triggered
 	EXTINT0 &=  ~(dm9000_info.netdev.int_base << 28);
 	EXTINT0 |= ((dm9000_info.netdev.int_state & 0xf)<< 28);
 	//register EINT7 ISR
-	register_extern_int(dm9000_info.netdev.int_base,dm9000_isr);
+	ret = register_extern_int(dm9000_info.netdev.int_base,dm9000_isr);
+	return ret;
 }
 
 /*****************************************************************************
@@ -888,9 +922,8 @@ static unsigned short dm9000_phy_read( int reg )
 	val = (DM9000_ior(EPDRH) << 8) | DM9000_ior(EPDRL);
 
 	/* The read data keeps on REG_0D & REG_0E */
-	printf("dm9000_phy_read(0x%x): 0x%x\n\t", reg, val);
-	return val;
-   
+	//printf("dm9000_phy_read(0x%x): 0x%x\n\r", reg, val);
+	return val; 
 }
 
 /*****************************************************************************
@@ -910,18 +943,19 @@ static unsigned short dm9000_phy_read( int reg )
 *****************************************************************************/
 static int dm9000_probe(void)
 {
-	unsigned int id_val;
+	unsigned int id_val,ret;
 	id_val = DM9000_ior(VIDL);
 	id_val |= DM9000_ior(VIDH) << 8;
 	id_val |= DM9000_ior(PIDL) << 16;
 	id_val |= DM9000_ior(PIDH) << 24;
 	if (id_val == DM9000_ID) {
-		printf("dm9000 i/o: 0x%x, id: 0x%x \n\t", (unsigned int)dm9000_cmd_base,id_val);
-		return 0;
+		printf("dm9000 i/o: 0x%x, id: 0x%x .\n\r", (unsigned int)dm9000_cmd_base,id_val);
+		ret =  0;
 	} else {
-		printf("dm9000 not found at 0x%08x id: 0x%08x\n\t",(unsigned int)dm9000_cmd_base, id_val);
-		return -1;
+		printf("dm9000 not found at 0x%08x id: 0x%08x.\n\r",(unsigned int)dm9000_cmd_base, id_val);
+		ret =  -1;
 	}
+	return ret;
 }
 /*****************************************************************************
  函 数 名  : dm9000_phy_write
@@ -951,7 +985,7 @@ static void dm9000_phy_write(int reg, UINT16 value)
 	DM9000_iow(EPCR, 0xa);	/* Issue phyxcer write command */
 	udelay_us(500);			/* Wait write complete */
 	DM9000_iow(EPCR, 0x0);	/* Clear phyxcer write command */
-	printf("dm9000_phy_write(reg:0x%x, value:0x%x)\n", reg, value);
+	printf("dm9000_phy_write(reg:0x%x, value:0x%x)\n\r", reg, value);
 }
 
 /*****************************************************************************
@@ -1005,12 +1039,15 @@ static void dm9000_halt(void)
 
 int DM9000_Init(void)
 {
-	unsigned char i,io_mode,oft,lnk;	
+	unsigned char i,io_mode,oft,lnk;
+	int ret;
 	struct board_info *db = &dm9000_info;
 	if(db == NULL)
 		return -1;
 	//setting dm9000 ISR
-	dm9000_gpio_init();
+	ret = dm9000_gpio_init();
+	if(ret)
+		return -1;
 	/* RESET device */
 	DM9000_reset();
 	if(dm9000_probe() < 0)
@@ -1019,26 +1056,26 @@ int DM9000_Init(void)
 	io_mode = DM9000_ior(ISR) >> 6;
 	switch(io_mode){
 		case 0x0:  /* 16-bit mode */
-			printf("DM9000: running in 16 bit mode\n");
+			printf("DM9000: running in 16 bit mode\n\r");
 			db->outblk    = dm9000_outblk_16bit;
 			db->inblk     = dm9000_inblk_16bit;
 			db->rx_status = dm9000_rx_status_16bit;
 			break;
 		case 0x01:  /* 32-bit mode */
-			printf("DM9000: running in 32 bit mode\n");
+			printf("DM9000: running in 32 bit mode\n\r");
 			db->outblk    = dm9000_outblk_32bit;
 			db->inblk     = dm9000_inblk_32bit;
 			db->rx_status = dm9000_rx_status_32bit;
 			break;
 		case 0x02: /* 8 bit mode */
-			printf("DM9000: running in 8 bit mode\n");
+			printf("DM9000: running in 8 bit mode\n\r");
 			db->outblk    = dm9000_outblk_8bit;
 			db->inblk     = dm9000_inblk_8bit;
 			db->rx_status = dm9000_rx_status_8bit;
 			break;
 		default:
 			/* Assume 8 bit mode, will probably not work anyway */
-			printf("DM9000: Undefined IO-mode:0x%x\n", io_mode);
+			printf("DM9000: Undefined IO-mode:0x%x\n\r", io_mode);
 			db->outblk    = dm9000_outblk_8bit;
 			db->inblk     = dm9000_inblk_8bit;
 			db->rx_status = dm9000_rx_status_8bit;
@@ -1063,34 +1100,29 @@ int DM9000_Init(void)
 
 	/* fill device MAC address registers */
 	for (i = 0, oft = PAR; i < 6; i++, oft++)
-		DM9000_iow(oft, mac_addr[i]);
+		DM9000_iow(oft, db->netdev.enetaddr[i]);
+	
 	for (i = 0, oft = MAR; i < 8; i++, oft++)
 		DM9000_iow(oft, 0xff);
-
-	/* read back mac, just to be sure */
-	for (i = 0, oft = PAR; i < 6; i++, oft++)
-		printf("%02x:", DM9000_ior(oft));
-	printf("\n\t");
-
 	/* Activate DM9000 */
 	/* RX enable */
 	DM9000_iow(RCR, RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN);
 	/* Enable TX/RX interrupt mask */
 	DM9000_iow(IMR, IMR_PAR);
-
+	/* autonegation complete bit */
 	i = 0;
-	while (!(dm9000_phy_read(1) & 0x20)) {	/* autonegation complete bit */
+	while (!(dm9000_phy_read(1) & 0x20)) {	
 		udelay_ms(10);
 		i++;
 		if (i == 10000) {
-			printf("could not establish link\n\t");
-			return 0;
+			printf("could not establish link\n\r");
+			return -1;
 		}
 	}
 
 	/* see what we've got */
 	lnk = dm9000_phy_read(17) >> 12;
-	printf("operating at ");
+	printf("The DM9000 operating at ");
 	switch (lnk) {
 	case 1:
 		printf("10M half duplex ");
@@ -1108,28 +1140,30 @@ int DM9000_Init(void)
 		printf("unknown: %d ", lnk);
 		break;
 	}
-	printf("mode\n\t");
+	printf("mode.\n\r");
 	return 0;	
 
 }
 
+/*****************************************************************************
+ 函 数 名  : test_dm9000
+ 功能描述  : test
+ 输入参数  : void  
+ 输出参数  : 无
+ 返 回 值  : 
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2016年12月15日
+    作    者   : QSWWD
+    修改内容   : 新生成函数
+
+*****************************************************************************/
 void test_dm9000(void)
 {
-	int i,oft;
 	test_dm9000_ID();
-	dm9000_regs();
-	
-	/* fill device MAC address registers */
-	for (i = 0, oft = PAR; i < 6; i++, oft++)
-	{
-		DM9000_iow(PAR + i, mac_addr[i]);
-	}
-	for (i = 0, oft = MAR; i < 8; i++, oft++)
-		DM9000_iow(oft, 0xff);
-	/* read back mac, just to be sure */
-	for (i = 0, oft = PAR; i < 6; i++, oft++)
-		printf("%02x:", DM9000_ior(oft));
-	printf("\n\t");	
+	dm9000_regs();	
 }
 
 /*****************************************************************************
@@ -1147,14 +1181,14 @@ void test_dm9000(void)
     修改内容   : 新生成函数
 
 *****************************************************************************/
-int dm9000_initialize(bd_t *bis)
+int dm9000_initialize(void)
 {
 	int ret = 0;
 	struct eth_device *dev;
 	/*setting dm9000*/
 	ret = get_dm9000_resoures();
 	if(ret < 0){
-		printf("get resoures failed.\n");
+		printf("get resoures failed.\n\r");
 		goto tail;
 	}		
 	dev = &(dm9000_info.netdev);

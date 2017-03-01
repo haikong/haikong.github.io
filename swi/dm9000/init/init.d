@@ -1,3 +1,2 @@
-init.o init.d : init.c \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/s3c2440_addr.h \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/init.h
+init.o init.d : init.c /home/haikong/app/dm9000/include/s3c2440_addr.h \
+  /home/haikong/app/dm9000/include/init.h

@@ -1,6 +1,5 @@
-printf.o printf.d : printf.c \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/vsprintf.h \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/types.h \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/string.h \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/printf.h \
-  /mnt/hgfs/code/hardware_all/swi/lcd_swi/include/serial.h
+printf.o printf.d : printf.c /home/haikong/app/dm9000/include/vsprintf.h \
+  /home/haikong/app/dm9000/include/types.h \
+  /home/haikong/app/dm9000/include/string.h \
+  /home/haikong/app/dm9000/include/printf.h \
+  /home/haikong/app/dm9000/include/serial.h

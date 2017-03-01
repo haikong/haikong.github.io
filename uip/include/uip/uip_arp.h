@@ -52,7 +52,7 @@
 #ifndef __UIP_ARP_H__
 #define __UIP_ARP_H__
 
-#include "uip.h"
+#include "uip/uip.h"
 
 
 extern struct uip_eth_addr uip_ethaddr;
@@ -69,6 +69,45 @@ struct uip_eth_hdr {
 #define UIP_ETHTYPE_ARP 0x0806
 #define UIP_ETHTYPE_IP  0x0800
 #define UIP_ETHTYPE_IP6 0x86dd
+
+struct arp_hdr {
+  struct uip_eth_hdr ethhdr;
+  u16_t hwtype;
+  u16_t protocol;
+  u8_t hwlen;
+  u8_t protolen;
+  u16_t opcode;
+  struct uip_eth_addr shwaddr;
+  u16_t sipaddr[2];
+  struct uip_eth_addr dhwaddr;
+  u16_t dipaddr[2];
+};
+
+struct ethip_hdr {
+  struct uip_eth_hdr ethhdr;
+  /* IP header. */
+  u8_t vhl,
+    tos,
+    len[2],
+    ipid[2],
+    ipoffset[2],
+    ttl,
+    proto;
+  u16_t ipchksum;
+  u16_t srcipaddr[2],
+    destipaddr[2];
+};
+
+#define ARP_REQUEST 1
+#define ARP_REPLY   2
+
+#define ARP_HWTYPE_ETH 1
+
+struct arp_entry {
+  u16_t ipaddr[2];
+  struct uip_eth_addr ethaddr;
+  u8_t time;
+};
 
 
 /* The uip_arp_init() function must be called before any of the other

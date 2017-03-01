@@ -71,14 +71,14 @@ static t_platform_device *smdk2440_devices[] _init_data = {
     修改内容   : 新生成函数
 
 *****************************************************************************/
-void  smdk2440_machine_init(void)
+int  smdk2440_machine_init(void)
 {	
 	int ret;
-	unsigned int pdev = (unsigned int)smdk2440_devices;
-	printf("pdev = %x,smdk2440_devices[0] = %p,&s3c2440_device_eth = %p\n",*(unsigned int*)pdev,smdk2440_devices[0],&s3c2440_device_eth);
-	for(ret = 0;ret < ARRAY_SIZE(smdk2440_devices);ret++)
-		printf("smdk2440_devices[%d] = %p\n",ret,smdk2440_devices[ret]);
 	ret = platform_add_devices(smdk2440_devices, ARRAY_SIZE(smdk2440_devices));
-	printf("Registers all the platform devices.");
+	if(ret)
+		printf("\n\tSome devices regsited error.\n\r");
+	else
+		printf("\n\tRegisters all the platform devices.\n\r");
+	return ret;
 }
 

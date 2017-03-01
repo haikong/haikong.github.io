@@ -1,14 +1,24 @@
 dm9000_elf  :
-section             size         addr
-.init              0x8c8          0x0
-.text             0x9e94   0x30000000
-.rodata            0xbb0   0x30009e94
-.data              0x10a   0x3000aa44
-.data.rel.local     0x28   0x3000ab50
-.data.rel            0xc   0x3000ab78
-.bss               0x900   0x3000ab84
-.ARM.attributes     0x26          0x0
-.comment           0x45e          0x0
-Total             0xc1ce
+section              size         addr
+.init               0x8e8          0x0
+.text              0xbbd4   0x30000000
+.rodata             0xd74   0x3000bbd4
+.data               0x142   0x3000c948
+.data.rel.local      0x28   0x3000ca8c
+.data.rel             0xc   0x3000cab4
+.init_data           0x8c   0x3000cac0
+.bss                0xa00   0x3000cb4c
+.ARM.attributes      0x26          0x0
+.comment            0x4b4          0x0
+.debug_aranges      0x380          0x0
+.debug_pubnames     0xa8f          0x0
+.debug_info        0x529d          0x0
+.debug_abbrev      0x168d          0x0
+.debug_line        0x14c9          0x0
+.debug_frame       0x15f4          0x0
+.debug_str         0x151b          0x0
+.debug_loc         0x2134          0x0
+.debug_ranges        0x68          0x0
+Total             0x1bbb9
 
 

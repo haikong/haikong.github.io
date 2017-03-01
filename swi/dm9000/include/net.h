@@ -196,11 +196,12 @@ typedef enum _mac_proto{
 /*ethwork structure*/
 struct eth_device {
 	char name[16];
-	unsigned char enetaddr[6];
-	int iobase;
-	int int_base;
-	int int_state;
-	int state;
+	unsigned char enetaddr[6];	  //mac address
+	unsigned short flag;		  //work bit mode 
+	int iobase;					  //devices io base address
+	int int_base;				  //devices' interrupt vector number
+	int int_state;				  //devices' interrupt work mode
+	int state;					  //devices' work mode
 	
 	int  (*init) (void);
 	int  (*send) (void *packet,unsigned int length);
