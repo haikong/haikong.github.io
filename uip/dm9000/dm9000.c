@@ -748,12 +748,12 @@ static int dm9000_revPacket(unsigned char* data_src )
 			DM9000_iow(IMR, 0x81);
 			return 0; /* No packet received, ignore */
 		}
-		printf("receiving packet\n\r");
+		DM9000_DBG("receiving packet\n\r");
 
 		/* A packet ready now  & Get status/length */
 		(db->rx_status)(&RX_status, &RX_length);
 
-		printf("rx status: 0x%04x rx len: %d\n\r", RX_status, RX_length);
+		DM9000_DBG("rx status: 0x%04x rx len: %d\n\r", RX_status, RX_length);
 
 		/* Move data from DM9000 */
 		/* Read received packet from RX SRAM */
@@ -863,7 +863,7 @@ static int dm9000_revPacket(unsigned char* data_src )
 static void dm9000_isr(unsigned int vector)
 {
 	g_dm9000_isr_count++;
-	printf("%s-%d:g_dm9000_isr_count=%d\n\r",__FUNCTION__,__LINE__,g_dm9000_isr_count);
+	DM9000_DBG("%s-%d:g_dm9000_isr_count=%d\n\r",__FUNCTION__,__LINE__,g_dm9000_isr_count);
 	DM9000_iow(IMR, 0x80);
 }
 

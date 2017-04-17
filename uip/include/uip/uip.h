@@ -58,7 +58,7 @@
 #include "uip/uip_app.h"
 #include "uip/uip_type.h"
 #include "uip/uipram_vdcl.h"
-
+#include <net.h>
 #include <string.h>
 
 /*---------------------------------------------------------------------------*/
@@ -1234,10 +1234,6 @@ u16_t uip_tcpchksum(void);
  * to by uip_appdata.
  */
 u16_t uip_udpchksum(void);
-
-#ifndef UIP_APPCALL
-#define UIP_APPCALL() uip_app()
-#endif /* UIP_APPCALL */
 
 
 #endif /* __UIP_H__ */

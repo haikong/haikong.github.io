@@ -202,7 +202,7 @@ static void uip_arp_update(u16_t *ipaddr, struct uip_eth_addr *ethaddr)
  * variable uip_len.
  */
 /*-----------------------------------------------------------------------------------*/
-#if 0
+
 void uip_arp_ipin(void)
 {
   uip_len -= sizeof(struct uip_eth_hdr);
@@ -221,7 +221,7 @@ void uip_arp_ipin(void)
   
   return;
 }
-#endif /* 0 */
+
 /*-----------------------------------------------------------------------------------*/
 /**
  * ARP processing for incoming ARP packets.

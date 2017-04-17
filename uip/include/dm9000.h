@@ -132,9 +132,10 @@ struct dm9000_plat_data {
 	void	(*dumpblk)(void  *reg, int len);
 };
 /* #define CONFIG_DM9000_DEBUG */
-#define CONFIG_DM9000_DEBUG
+#define CONFIG_DM9000_DEBUG 1
+
 #ifdef CONFIG_DM9000_DEBUG
-#define DM9000_DBG(fmt,args...) printf(fmt, ##args)
+#define DM9000_DBG(fmt,args...) //printf(fmt, ##args)
 #define DM9000_DMP_PACKET(func,packet,length)  \
 	do { \
 		int i; 							\

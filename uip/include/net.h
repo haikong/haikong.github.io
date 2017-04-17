@@ -1,7 +1,7 @@
 #ifndef __NET_H__
 #define __NET_H__
 #include <types.h>
-
+#include <glob.h>
 /* IPv4 addresses are always 32 bits in size */
 typedef UINT32		IPaddr_t;
 /**

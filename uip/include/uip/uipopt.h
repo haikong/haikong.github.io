@@ -230,7 +230,7 @@
  *
  * \hideinitializer
  */
-#define UIP_ACTIVE_OPEN 0
+#define UIP_ACTIVE_OPEN 1
 
 /**
  * The maximum number of simultaneously open TCP connections.
@@ -535,5 +535,11 @@ typedef struct httpd_state uip_tcp_appstate_t
  */
 /** @} */
 /** @} */
+/*uip logging*/
+#if UIP_LOGGING == 1
+#define UIP_LOG(m) uip_log(m)
+#else
+#define UIP_LOG(m)
+#endif /* UIP_LOGGING == 1 */    
 
 #endif /* __UIPOPT_H__ */
