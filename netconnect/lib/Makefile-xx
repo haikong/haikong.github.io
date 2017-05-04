@@ -1,0 +1,23 @@
+#/bin/sh
+CROSS_COMPILE = arm-linux-
+AS		= $(CROSS_COMPILE)as
+LD		= $(CROSS_COMPILE)ld
+CC		= $(CROSS_COMPILE)gcc
+CPP		= $(CC) -E
+AR		= $(CROSS_COMPILE)ar
+NM		= $(CROSS_COMPILE)nm
+SIZE	= $(CROSS_COMPILE)size
+
+STRIP		= $(CROSS_COMPILE)strip
+OBJCOPY		= $(CROSS_COMPILE)objcopy
+OBJDUMP		= $(CROSS_COMPILE)objdump
+
+obj = $(patsubst %.c,%.o,$(wildcard *.c))
+obj += $(patsubst %.s,%.o,$(wildcard *.s))
+
+lib.a:
+    $(AR) -r -o $@ $(obj)
+
+.PHONY:clean
+clean:
+    rm -r -f *.bak
